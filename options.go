@@ -95,6 +95,11 @@ func RocksOpts(options *Options) *rocks.Options {
 	opts := rocks.NewOptions()
 	opts.SetEnv(env)
 
+	if b, ok := options.BoolKey("read_only"); ok {
+		opts.SetReadOnly(b)
+		fmt.Printf("config opts.SetReadOnly(%v)\n", b)
+	}
+
 	cacheSize := DefaultCacheSize
 	if n, ok := options.IntKey("cache_size"); ok {
 		cacheSize = n

@@ -72,9 +72,39 @@ func main() {
 
 	fmt.Println(g.GetStats())
 
+	Bar(g)
+
 	err = g.Close()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func Foo(g *Graph) {
+	t := Triple{nil, nil, []byte("http://rdf.freebase.com/ns/m.0dw28j5"), nil}
+	c := g.Walk(t, []Stepper{
+		In([]byte("http://rdf.freebase.com/ns/type.type.instance")),
+	})
+
+	for {
+		x := <-*c
+		if x == nil {
+			break
+		}
+		fmt.Printf("got %v\n", x)
+	}
+}
+
+func Bar(g *Graph) {
+	on := Triple{[]byte("http://rdf.freebase.com/ns/m.0h55n27"), nil, nil, nil}
+	i := g.NewIndexIterator(SPO, &on, nil)
+	limit := 100
+	for i.Next() {
+		if limit == 0 {
+			break
+		}
+		limit--
+		fmt.Printf("next %v\n", IndexedTripleFromBytes(SPO, i.Key(), i.Value()).ToStrings())
 	}
 }
 
