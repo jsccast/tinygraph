@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func main() {
+func RationalizeMaxProcs () {
 	if os.Getenv("GOMAXPROCS") == "" {
 		n := runtime.NumCPU()
 		fmt.Printf("Setting GOMAXPROCS to %d\n", n)
@@ -19,6 +19,30 @@ func main() {
 	} else {
 		fmt.Printf("GOMAXPROCS is %v\n", os.Getenv("GOMAXPROCS"))
 	}
+}
+
+func CompactEverything (g *Graph) {
+	fmt.Printf("starting initial compaction %s\n", NowStringMillis())
+	ff := byte(0xff)
+	r := rocks.Range{[]byte{}, []byte{ff, ff, ff, ff, ff, ff, ff, ff, ff}}
+	g.db.CompactRange(r)
+	fmt.Printf("completed initial compaction %s\n", NowStringMillis())
+}
+
+func WriteStatsLoop (g *Graph) {
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			bs := []byte(g.GetStats())
+			ioutil.WriteFile("stats.txt", bs, 0644)
+		}
+	}()
+}
+
+
+func main() {
+
+	RationalizeMaxProcs()
 
 	config, err := LoadOptions("config.json")
 	if err != nil {
@@ -38,24 +62,15 @@ func main() {
 	g.ropts = RocksReadOpts(config)
 
 	fmt.Println(g.GetStats())
-	if b, ok := config.BoolKey("initial_compaction"); ok {
-		if b {
-			fmt.Printf("starting initial compaction %s\n", NowStringMillis())
-			ff := byte(0xff)
-			r := rocks.Range{[]byte{}, []byte{ff, ff, ff, ff, ff, ff, ff, ff, ff}}
-			g.db.CompactRange(r)
-			fmt.Printf("completed initial compaction %s\n", NowStringMillis())
-			fmt.Println(g.GetStats())
-		}
+
+	if b, ok := config.BoolKey("initial_compaction"); ok && b {
+		CompactEverything(g)
+		fmt.Println(g.GetStats())
 	}
 
-	go func() {
-		for {
-			time.Sleep(5 * time.Second)
-			bs := []byte(g.GetStats())
-			ioutil.WriteFile("stats.txt", bs, 0644)
-		}
-	}()
+	if b, ok := config.BoolKey("stats_loop"); ok && b {
+		WriteStatsLoop(g)
+	}
 
 	if filenames, ok := config.StringKey("triples_file"); ok {
 		wait := sync.WaitGroup{}
