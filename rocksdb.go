@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	rocks "github.com/DanielMorsing/rocksdb"
+	"sync/atomic"
 )
 
 type Graph struct {
-	db    *rocks.DB
-	opts  *rocks.Options
-	wopts *rocks.WriteOptions
-	ropts *rocks.ReadOptions
+	db     *rocks.DB
+	opts   *rocks.Options
+	wopts  *rocks.WriteOptions
+	ropts  *rocks.ReadOptions
+	writes uint64
 }
 
 func NewGraph(path string, opts *rocks.Options) (*Graph, error) {
@@ -18,11 +20,19 @@ func NewGraph(path string, opts *rocks.Options) (*Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Graph{db, opts, nil, nil}, nil
+	return &Graph{db, opts, nil, nil, uint64(0)}, nil
+}
+
+func (g *Graph) IncWrites(n uint64) uint64 {
+	return atomic.AddUint64(&g.writes, n)
+}
+
+func (g *Graph) GetWrites() uint64 {
+	return atomic.LoadUint64(&g.writes)
 }
 
 func (g *Graph) GetStats() string {
-	return g.db.PropertyValue("rocksdb.stats")
+	return g.db.PropertyValue("rocksdb.stats") + fmt.Sprintf("\nnewwrites %d\n", g.GetWrites())
 }
 
 func (g *Graph) Close() error {
@@ -42,7 +52,11 @@ func (g *Graph) WriteBatch(triples []Triple, opts *rocks.WriteOptions) error {
 	for _, triple := range triples {
 		batch.Put(triple.Key(), triple.Val())
 	}
-	return g.db.Write(opts, batch)
+	err := g.db.Write(opts, batch)
+	if err == nil {
+		g.IncWrites(uint64(len(triples)))
+	}
+	return err
 }
 
 func IndexedTripleFromBytes(index Index, bs []byte, v []byte) *Triple {
@@ -61,7 +75,11 @@ func (g *Graph) IndexTriple(index Index, triple *Triple, opts *rocks.WriteOption
 	if opts == nil {
 		opts = g.wopts
 	}
-	return g.db.Put(opts, withIndex(index, triple.Key()), triple.Val())
+	err := g.db.Put(opts, withIndex(index, triple.Key()), triple.Val())
+	if err == nil {
+		g.IncWrites(1)
+	}
+	return err
 }
 
 type IteratorState byte
@@ -132,7 +150,11 @@ func (g *Graph) WriteTriple(triple *Triple, opts *rocks.WriteOptions) error {
 	if opts == nil {
 		opts = g.wopts
 	}
-	return g.db.Put(opts, triple.Key(), triple.Val())
+	err := g.db.Put(opts, triple.Key(), triple.Val())
+	if err == nil {
+		g.IncWrites(1)
+	}
+	return err
 }
 
 func (g *Graph) WriteIndexedTriple(triple *Triple, opts *rocks.WriteOptions) error {
@@ -148,7 +170,11 @@ func (g *Graph) WriteIndexedTriple(triple *Triple, opts *rocks.WriteOptions) err
 	batch.Put(withIndex(SPO, triple.Copy().Permute(SPO).Key()), v)
 	batch.Put(withIndex(OPS, triple.Copy().Permute(OPS).Key()), v)
 	batch.Put(withIndex(PSO, triple.Copy().Permute(PSO).Key()), v)
-	return g.db.Write(opts, batch)
+	err := g.db.Write(opts, batch)
+	if err == nil {
+		g.IncWrites(uint64(3))
+	}
+	return err
 }
 
 func (g *Graph) WriteIndexedTriples(triples []*Triple, opts *rocks.WriteOptions) error {
@@ -163,7 +189,11 @@ func (g *Graph) WriteIndexedTriples(triples []*Triple, opts *rocks.WriteOptions)
 		batch.Put(withIndex(OPS, triple.Copy().Permute(OPS).Key()), v)
 		batch.Put(withIndex(PSO, triple.Copy().Permute(PSO).Key()), v)
 	}
-	return g.db.Write(opts, batch)
+	err := g.db.Write(opts, batch)
+	if err == nil {
+		g.IncWrites(uint64(3 * len(triples)))
+	}
+	return err
 }
 
 func (g *Graph) Scan(index Index, on *Triple, opts *rocks.ReadOptions) []Triple {

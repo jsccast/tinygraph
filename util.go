@@ -10,13 +10,14 @@ import (
 func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
 	f, err := os.Open(tripleFile)
 	if err != nil {
-		fmt.Printf("Couldn't open file %s: %v\n", tripleFile, err)
+		fmt.Printf("ReadTriplesFromFile: Couldn't open file %s: %v\n", tripleFile, err)
+		close(c)
 		return fmt.Errorf("Couldn't open file %s: %v", tripleFile, err)
 	}
 
 	ReadNQuadsFromReader(c, f)
 	if err := f.Close(); err != nil {
-		fmt.Printf("%v\n", err)
+		fmt.Printf("ReadTriplesFromFile: %v\n", err)
 		return err
 	}
 
@@ -32,8 +33,15 @@ func NowStringMillis() string {
 }
 
 func (g *Graph) LoadTriplesFromFile(filename string, opts *Options, wait *sync.WaitGroup) {
+	defer func() {
+		if wait != nil {
+			wait.Done()
+		}
+	}()
+
 	c := make(chan *Triple)
 	go ReadTriplesFromFile(c, filename)
+
 	batchSize := 1000
 	if n, ok := opts.IntKey("batch_size"); ok {
 		batchSize = n
@@ -52,29 +60,49 @@ func (g *Graph) LoadTriplesFromFile(filename string, opts *Options, wait *sync.W
 	i := 0
 	then := Now()
 	batch := make([]*Triple, 0, batchSize)
+	wrote := 0
+	problems := 0
+
+	report := func() {
+		time := Now()
+		elapsed := time - then
+		then = time
+		rate := float64(interval) / float64(elapsed) * 1000000000.0
+		fmt.Printf("load %s %s %012d %f %012d %06d %012d\n", filename, NowStringMillis(), i, rate, wrote, problems, g.GetWrites())
+		if stats {
+			fmt.Printf("%s\n", g.GetStats())
+		}
+	}
 	for t := range c {
+		if t == nil {
+			break
+		}
 		i++
 		if batchSize == len(batch) {
-			g.WriteIndexedTriples(batch, nil)
+			err := g.WriteIndexedTriples(batch, nil)
+			if err != nil {
+				problems++
+				fmt.Printf("ERROR: %v %d at %d\n", err, problems, i)
+				for j, bad := range batch {
+					ss := bad.ToStrings()
+					s := ss[0]
+					p := ss[1]
+					o := ss[2]
+					fmt.Printf("PROBLEM %d '%s' '%s' '%s'\n", j, s, p, o)
+				}
+			} else {
+				wrote += len(batch)
+			}
 			batch = batch[0:0]
 		}
 		batch = append(batch, t)
 
 		if i%interval == 0 {
-			time := Now()
-			elapsed := time - then
-			then = time
-			rate := float64(interval) / float64(elapsed) * 1000000000.0
-			fmt.Printf("load %s %s %012d %f\n", filename, NowStringMillis(), i, rate)
-			if stats {
-				fmt.Printf("%s\n", g.GetStats())
-			}
+			report()
 		}
 
 	}
 	g.WriteIndexedTriples(batch, nil)
+	report()
 
-	if wait != nil {
-		wait.Done()
-	}
 }

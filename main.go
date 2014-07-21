@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func RationalizeMaxProcs () {
+func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {
 		n := runtime.NumCPU()
 		fmt.Printf("Setting GOMAXPROCS to %d\n", n)
@@ -21,7 +21,7 @@ func RationalizeMaxProcs () {
 	}
 }
 
-func CompactEverything (g *Graph) {
+func CompactEverything(g *Graph) {
 	fmt.Printf("starting initial compaction %s\n", NowStringMillis())
 	ff := byte(0xff)
 	r := rocks.Range{[]byte{}, []byte{ff, ff, ff, ff, ff, ff, ff, ff, ff}}
@@ -29,7 +29,7 @@ func CompactEverything (g *Graph) {
 	fmt.Printf("completed initial compaction %s\n", NowStringMillis())
 }
 
-func WriteStatsLoop (g *Graph) {
+func WriteStatsLoop(g *Graph) {
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
@@ -39,12 +39,8 @@ func WriteStatsLoop (g *Graph) {
 	}()
 }
 
-
-func main() {
-
-	RationalizeMaxProcs()
-
-	config, err := LoadOptions("config.json")
+func GetGraph(configFilename string) (*Graph, *Options) {
+	config, err := LoadOptions(configFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +48,13 @@ func main() {
 	opts := RocksOpts(config)
 	opts.SetCreateIfMissing(true)
 	opts.SetErrorIfExists(false)
-	g, err := NewGraph("g", opts)
+
+	dirname := "tmprocks"
+	if dir, ok := config.StringKey("db_dir"); ok {
+		dirname = dir
+	}
+
+	g, err := NewGraph(dirname, opts)
 
 	if err != nil {
 		panic(err)
@@ -61,6 +63,14 @@ func main() {
 	g.wopts = RocksWriteOpts(config)
 	g.ropts = RocksReadOpts(config)
 
+	return g, config
+}
+
+func main() {
+
+	RationalizeMaxProcs()
+
+	g, config := GetGraph("config.json")
 	fmt.Println(g.GetStats())
 
 	if b, ok := config.BoolKey("initial_compaction"); ok && b {
@@ -86,41 +96,31 @@ func main() {
 	}
 
 	fmt.Println(g.GetStats())
+	// fmt.Printf("Freebase check: %v\n", FreebaseCheck(g))
 
-	Bar(g)
+	// TinyTest(g)
+	// StepsTest(g)
 
-	err = g.Close()
+	err := g.Close()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func Foo(g *Graph) {
-	t := Triple{nil, nil, []byte("http://rdf.freebase.com/ns/m.0dw28j5"), nil}
-	c := g.Walk(t, []Stepper{
-		In([]byte("http://rdf.freebase.com/ns/type.type.instance")),
-	})
-
-	for {
-		x := <-*c
-		if x == nil {
-			break
-		}
-		fmt.Printf("got %v\n", x)
-	}
-}
-
-func Bar(g *Graph) {
-	on := Triple{[]byte("http://rdf.freebase.com/ns/m.0h55n27"), nil, nil, nil}
-	i := g.NewIndexIterator(SPO, &on, nil)
+func FreebaseCheck(g *Graph) bool {
 	limit := 100
-	for i.Next() {
-		if limit == 0 {
-			break
-		}
-		limit--
-		fmt.Printf("next %v\n", IndexedTripleFromBytes(SPO, i.Key(), i.Value()).ToStrings())
-	}
+	found := 0
+	g.Do(SPO, &Triple{[]byte("http://rdf.freebase.com/ns/m.0h55n27"), nil, nil, nil}, nil,
+		func(t *Triple) bool {
+			fmt.Printf("next %v\n", t.ToStrings())
+			found++
+			limit--
+			if limit == 0 {
+				return false
+			}
+			return true
+		})
+	return 0 < found
 }
 
 func TinyTest(g *Graph) {
@@ -163,34 +163,6 @@ func TinyTest(g *Graph) {
 	fmt.Println("wordnet")
 	g.Do(SPO, TripleFromStrings("100002452-n", "ontology#hyponym"), nil, PrintTriple)
 
-	/*
-
-		{
-			c := make(chan *Triple)
-			f := func(t *Triple) bool {
-				c <- t
-				g.Do(SPO, TripleFromStrings(string(t.O), "ontology#hyponym"), nil,
-					func (u *Triple) bool {
-						c <- u
-						return true
-					})
-				return true
-			}
-			go func() {
-				g.Do(SPO, TripleFromStrings("100002452-n", "ontology#hyponym"), nil, f)
-				c <- nil
-			}()
-			for {
-				t := <- c
-				if t == nil {
-					break
-				}
-				g.Do(SPO, TripleFromStrings(string(t.O), "rdf-schema#label"), nil, PrintTriple)
-			}
-		}
-
-	*/
-
 	g.WriteIndexedTriple(TripleFromStrings("a", "p1", "b", "today"), nil)
 	g.WriteIndexedTriple(TripleFromStrings("a", "p1", "f", "today"), nil)
 	g.WriteIndexedTriple(TripleFromStrings("a", "p5", "j", "today"), nil)
@@ -201,22 +173,4 @@ func TinyTest(g *Graph) {
 	g.WriteIndexedTriple(TripleFromStrings("g", "p1", "h", "today"), nil)
 	g.WriteIndexedTriple(TripleFromStrings("g", "p1", "i", "today"), nil)
 
-	has := func(t Triple) bool {
-		return true
-	}
-
-	t := Triple{nil, nil, []byte("a"), nil}
-	c := g.Walk(t, []Stepper{
-		Out([]byte("p1")).Emitter(func(ts []Triple) interface{} { return "p1:" + string(last(ts).O) }),
-		Out([]byte("p2")),
-		In([]byte("p4")),
-		Out([]byte("p1")),
-		Has(has).Emitter(func(ts []Triple) interface{} { return PathToString(ts) + " last" })})
-	for {
-		x := <-*c
-		if x == nil {
-			break
-		}
-		fmt.Printf("got %v\n", x)
-	}
 }
