@@ -130,4 +130,4 @@ Level Files Size(MB)
 
 ### Notes
 
-I sometimes [listened](images/load/mp3) to spot rates while doing other things.  Funny.
+I sometimes [listened](images/load.mp3) to spot rates while doing other things.  Funny.
