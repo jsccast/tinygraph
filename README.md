@@ -9,7 +9,10 @@ support.
 
 Also see [Cayley](https://github.com/google/cayley).  I have a
 [fork](http://github.csv.comcast.com/jsteph206/cayley) that supports
-[`rocksdb`](http://rocksdb.org/).
+[`rocksdb`](http://rocksdb.org/).  I wrote Tinygraph primarily because
+I wanted to avoid Cayley's string interning (and reference counting)
+and I didn't want to rewrite by rocksdb support for Cayley to store
+strings directly.  (The latter probably would be easy.)
 
 ## Status
 
@@ -17,10 +20,13 @@ Highly experimental.
 
 ToDo:
 
-1. Hook up Javascript REPL
-2. Decent logging
-3. Test cases
-4. Docs
+1. Hook up Javascript REPL.
+2. Decent logging.
+3. Test cases.
+4. Docs.
+5. Do another version of rocksdb support for Cayley that stores strings directly (as this code does).
+6. Port `options.go` back to Cayley's `rocksdb/options.go`.
+7. Publish my fork of `github.com/DanielMorsing/rocksdb`.
 
 
 ## Freebase
