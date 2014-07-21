@@ -21,6 +21,8 @@ import (
 	"strings"
 )
 
+const onlyLang = "en"
+
 func isWhitespace(s uint8) bool {
 	return (s == '\t' || s == '\r' || s == ' ')
 }
@@ -54,6 +56,9 @@ func Parse(str string) *Triple {
 		prov = *prov_ptr
 	}
 	str = skipWhitespace(remainder)
+
+	// fmt.Printf("line %s %s %s %s\n", *sub, *pred, *obj, prov)
+
 	if str != "" && str[0] == '.' {
 		return &Triple{[]byte(*sub), []byte(*pred), []byte(*obj), []byte(prov)}
 	}
@@ -134,11 +139,26 @@ func getQuotedPart(str string) (*string, string) {
 		_, remainder = getUriPart(str[i+3:])
 	} else if strings.HasPrefix(str[i:], "@") {
 		_, remainder = getUnquotedPart(str[i+1:])
+		lang := getLanguage(str[i:])
+		if lang != onlyLang {
+			return nil, ""
+		}
+		// out = lang + "@" + out
 	} else {
 		remainder = str[i:]
 	}
 
 	return &out, remainder
+}
+
+func getLanguage (str string) string {
+	i := 1
+	lang := ""
+	for i < len(str) && !isWhitespace(str[i]) {
+		lang += str[i:i+1]
+		i++
+	}
+	return lang
 }
 
 func getUnquotedPart(str string) (*string, string) {
