@@ -27,6 +27,12 @@ ToDo:
 5. Do another version of rocksdb support for Cayley that stores strings directly (as this code does).
 6. Port `options.go` back to Cayley's `rocksdb/options.go`.
 7. Publish my fork of `github.com/DanielMorsing/rocksdb`.
+8. Document Wordnet load/use.
+
+
+## WordNet
+
+It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
 
 
 ## Freebase
