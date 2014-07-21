@@ -100,6 +100,7 @@ func main() {
 
 	// TinyTest(g)
 	// StepsTest(g)
+	// FreebaseCheck(g)
 
 	err := g.Close()
 	if err != nil {
@@ -107,12 +108,12 @@ func main() {
 	}
 }
 
-func FreebaseCheck(g *Graph) bool {
+func DoPrint(g *Graph, index Index, label string, s string) bool {
 	limit := 100
 	found := 0
-	g.Do(SPO, &Triple{[]byte("http://rdf.freebase.com/ns/m.0h55n27"), nil, nil, nil}, nil,
+	g.Do(index, &Triple{[]byte(s), nil, nil, nil}, nil,
 		func(t *Triple) bool {
-			fmt.Printf("next %v\n", t.ToStrings())
+			fmt.Printf("%s %v\n", label, t.ToStrings())
 			found++
 			limit--
 			if limit == 0 {
@@ -121,6 +122,15 @@ func FreebaseCheck(g *Graph) bool {
 			return true
 		})
 	return 0 < found
+}
+
+
+func FreebaseCheck(g *Graph) bool {
+	DoPrint(g, SPO, "SPO m.0h55n27", "http://rdf.freebase.com/ns/m.0h55n27")
+	DoPrint(g, SPO, "SPO m.03sp3gw", "http://rdf.freebase.com/ns/m.03sp3gw")
+	DoPrint(g, OPS, "OPS m.03sp3gw", "http://rdf.freebase.com/ns/m.03sp3gw")
+	DoPrint(g, SPO, "SPO g.1256ncwfc", "http://rdf.freebase.com/ns/g.1256ncwfc")
+	return DoPrint(g, OPS, "OPS g.1256ncwfc", "http://rdf.freebase.com/ns/g.1256ncwfc")
 }
 
 func TinyTest(g *Graph) {
