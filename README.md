@@ -126,3 +126,8 @@ Level Files Size(MB)
 ![fb-gc-time-over-time.png](images/fb-gc-time-over-time.png)
 
 ![fb-gc-time-zoom.png](images/fb-gc-time-zoom.png)
+
+
+### Notes
+
+I sometimes [listened](images/load/mp3) to spot rates while doing other things.  Funny.
