@@ -92,6 +92,13 @@ vector
 Currently I'm using this code to load all of
 [Freebase](https://developers.google.com/freebase/data).
 
+Summary: I processed 2,638,544,493 lines (356,018,834,809 bytes) into
+2,386,769,886 unique triples (edges) in 16 hours.  On disk, the
+database is 90GB.  So we can run all of Freebase out of RAM.
+
+But: Still verifying that processing.
+
+
 ### Machine
 ```
 RAM        64GB
