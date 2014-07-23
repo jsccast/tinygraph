@@ -151,11 +151,11 @@ func getQuotedPart(str string) (*string, string) {
 	return &out, remainder
 }
 
-func getLanguage (str string) string {
+func getLanguage(str string) string {
 	i := 1
 	lang := ""
 	for i < len(str) && !isWhitespace(str[i]) {
-		lang += str[i:i+1]
+		lang += str[i : i+1]
 		i++
 	}
 	return lang

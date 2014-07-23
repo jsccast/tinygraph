@@ -7,67 +7,45 @@ import (
 	"os"
 )
 
-func getString(x interface{}) (string, error) {
-	switch vv := x.(type) {
-	case string:
-		return vv, nil
-	default:
-		return "", fmt.Errorf("Value %v (%T) not a string", x, x)
-	}
+// g = G.Open('config.json')
+// G.Out("p1").Walk(g, G.Vertex("a")).Collect()[0][0].ToStrings()
+
+type Env struct {
 }
 
-func repl() {
+func (e *Env) Vertex(s string) Vertex {
+	return []byte(s)
+}
+
+func (e *Env) Triple(s, p, o, v string) *Triple {
+	return &Triple{[]byte(s), []byte(p), []byte(o), []byte(v)}
+}
+
+func (e *Env) Open(config string) *Graph {
+	g, err := GetGraph(config)
+	if err != nil {
+		fmt.Printf("Open %s error: %v\n", config, err)
+	}
+	return g
+}
+
+func (e *Env) Out(p string) *Stepper {
+	return Out([]byte(p))
+}
+
+func (e *Env) In(p string) *Stepper {
+	return In([]byte(p))
+}
+
+func (e *Env) Bs(s string) []byte {
+	return []byte(s)
+}
+
+func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	vm := otto.New()
-	og, _ := vm.Object("g = {}")
-	og.Set("Triple", func(call otto.FunctionCall) otto.Value {
-		x, err := call.Argument(0).Export()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("x %T %v\n", x, x)
-		switch vv := x.(type) {
-		case []interface{}:
-			var s string
-			var p string
-			var o string
-			var v string
-			if 0 < len(vv) {
-				if s, err = getString(vv[0]); err != nil {
-					panic(err)
-				}
-			}
-			if 1 < len(vv) {
-				if p, err = getString(vv[1]); err != nil {
-					panic(err)
-				}
-			}
-			if 2 < len(vv) {
-				if o, err = getString(vv[2]); err != nil {
-					panic(err)
-				}
-			}
-			if 3 < len(vv) {
-				if o, err = getString(vv[3]); err != nil {
-					panic(err)
-				}
-			}
+	vm.Set("G", new(Env))
 
-			y, err := vm.ToValue(&Triple{[]byte(s), []byte(p), []byte(o), []byte(v)})
-			if err != nil {
-				panic(err)
-			}
-			return y
-		}
-
-		return call.Argument(0)
-	})
-
-	vm.Set("twoPlus", func(call otto.FunctionCall) otto.Value {
-		right, _ := call.Argument(0).ToInteger()
-		result, _ := vm.ToValue(2 + right)
-		return result
-	})
 	for scanner.Scan() {
 		line := scanner.Text()
 		x, err := vm.Run(line)

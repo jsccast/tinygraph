@@ -38,13 +38,23 @@ func TripleFromStrings(args ...string) *Triple {
 	return &Triple{s, p, o, v}
 }
 
-func (t *Triple) ToStrings() []string {
+// Not func(t *Triple) so Otto can find this method.
+func (t Triple) ToStrings() []string {
 	acc := make([]string, 0, 4)
 	acc = append(acc, string(t.S))
 	acc = append(acc, string(t.P))
 	acc = append(acc, string(t.O))
 	acc = append(acc, string(t.V))
 	return acc
+}
+
+// Not func(t *Triple) so Otto can find this method.
+func (t Triple) ToString() string {
+	return "<'" +
+		string(t.S) + "','" +
+		string(t.P) + "','" +
+		string(t.O) + "','" +
+		string(t.V) + "'>"
 }
 
 func TripleFromBytes(k []byte, v []byte) *Triple {

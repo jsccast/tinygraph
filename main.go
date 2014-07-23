@@ -66,10 +66,7 @@ func GetGraph(configFilename string) (*Graph, *Options) {
 	return g, config
 }
 
-func main() {
-
-	RationalizeMaxProcs()
-
+func Load() {
 	g, config := GetGraph("config.json")
 	fmt.Println(g.GetStats())
 
@@ -108,6 +105,12 @@ func main() {
 	}
 }
 
+func main() {
+	RationalizeMaxProcs()
+	// Load()
+	REPL()
+}
+
 func DoPrint(g *Graph, index Index, label string, s string) bool {
 	limit := 100
 	found := 0
@@ -123,7 +126,6 @@ func DoPrint(g *Graph, index Index, label string, s string) bool {
 		})
 	return 0 < found
 }
-
 
 func FreebaseCheck(g *Graph) bool {
 	DoPrint(g, SPO, "SPO m.0h55n27", "http://rdf.freebase.com/ns/m.0h55n27")

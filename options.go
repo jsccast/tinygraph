@@ -7,6 +7,7 @@ import (
 	"fmt"
 	rocks "github.com/DanielMorsing/rocksdb"
 	"io/ioutil"
+	"strings"
 )
 
 const (
@@ -15,13 +16,21 @@ const (
 
 type Options map[string]interface{}
 
+// Filename can either be a file name ... or JSON.  Surprise!
 func LoadOptions(filename string) (*Options, error) {
-	bs, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
+	var bs []byte
+	if strings.HasPrefix(filename, "{") {
+		bs = []byte(filename)
+	} else {
+		var err error
+		bs, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	opts := make(Options)
-	err = json.Unmarshal(bs, &opts)
+	err := json.Unmarshal(bs, &opts)
 	if err != nil {
 		return nil, err
 	}

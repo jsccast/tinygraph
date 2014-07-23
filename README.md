@@ -1,9 +1,22 @@
 # A tiny graph database
 
+Goal: A very fast and efficient graph database that handle billions of
+vertexes and billions of edges on single machine.
+
+Motivation: Semantic-social movie recommendations, but that's another
+story.
+
 The code is tiny, but the data can be single-machine big.
 
-Currently requires [`rocksdb`](http://rocksdb.org/), but many other
-back ends (e.g., [`levigo`](https://github.com/jmhodges/levigo) or
+As a proof-of-concept, we load
+[all of Freebase](https://developers.google.com/freebase/data), which
+is currently 2.6B triples and 350GB uncompressed.  See below for
+details.
+
+
+For storage, the code currently requires
+[`rocksdb`](http://rocksdb.org/), but many other back ends (e.g.,
+[`levigo`](https://github.com/jmhodges/levigo) or
 [`goleveldb`](https://github.com/syndtr/goleveldb)) would be easy to
 support.
 
@@ -20,19 +33,58 @@ Highly experimental.
 
 ToDo:
 
-1. Hook up Javascript REPL.
-2. Decent logging.
-3. Test cases.
-4. Docs.
-5. Do another version of rocksdb support for Cayley that stores strings directly (as this code does).
-6. Port `options.go` back to Cayley's `rocksdb/options.go`.
-7. Publish my fork of `github.com/DanielMorsing/rocksdb`.
-8. Document Wordnet load/use.
+1. Logging.
+2. Test cases.
+3. Docs (especially configuration).
+4. Document Wordnet load/use.
 
+
+## Query language
+
+Inspired in part by
+[Cayley's Grelim-like language](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md),
+we have a simple, Javascript-based query language.  (Cayley uses
+[`github.com/robertkrimen/otto`](github.com/robertkrimen/otto) like we
+do
+[elsewhere](https://github.com/google/cayley/blob/master/docs/GremlinAPI.md).)
+However, unlike Cayley, we base this language on Go functions that can
+be used from Go applications.
+
+```Javascript
+g = G.Open('config.json')
+G.Out("p1").Walk(g, G.Vertex("a")).Collect()[0][0].ToStrings()
+```
+
+ToDo: Document.
 
 ## WordNet
 
 It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
+
+ToDo: Say how.  (Basically just set `triples_file` in `config.json`.)
+
+It takes 4.5 seconds to load about 1M WordNet triples.
+
+Example query:
+
+```Javascript
+paths = G.In("rdf-schema#label").Out(G.Bs("ontology#hyponym")).Out(G.Bs("rdf-schema#label")).Walk(g, G.Vertex("virus")).Collect();
+for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
+```
+
+gives
+
+```
+arbovirus
+arbovirus
+phage
+phage
+plant virus
+animal virus
+slow virus
+tumor virus
+vector
+```
 
 
 ## Freebase
@@ -96,7 +148,7 @@ bytes   356 018 834 809
 start   2014-07-20T22:55:13.279Z
 done    2014-07-20T06:57:23.543Z
 elapsed 15:58:50
-keys    Should be 8B, but still verifying (at 2 386 769 886)
+keys    Should be 8B, but still verifying (at 2 386 769 886, which is strange)
 disk    89 943 764 K
 ```
 

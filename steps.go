@@ -10,37 +10,56 @@ type Stepper struct {
 	operm    Index
 	pattern  Triple
 	pred     func(Triple) bool
-	emit     func([]Triple) interface{}
+	fs       []func(Path)
 	previous *Stepper
 }
 
-func (g *Graph) Walk(at Triple, ss []*Stepper) *chan interface{} {
-	c := make(chan interface{})
-	go g.Launch(&c, at, ss)
-	return &c
+type Chants chan []Triple
+
+// We wrap because Otto wants us to.
+type Chan struct {
+	c Chants
 }
 
-func (g *Graph) Launch(c *chan interface{}, at Triple, ss []*Stepper) {
-	g.Step(c, []Triple{at}, ss)
-	*c <- nil
+type Vertex []byte
+
+type Path []Triple
+
+func (v *Vertex) ToTriple() Triple {
+	return Triple{nil, nil, *v, nil}
 }
 
-func last(ts []Triple) *Triple {
+func (g *Graph) Walk(o Vertex, ss []*Stepper) *Chan {
+	c := &Chan{make(Chants)}
+	go g.Launch(c, o.ToTriple(), ss)
+	return c
+}
+
+func (g *Graph) Launch(c *Chan, at Triple, ss []*Stepper) {
+	g.Step(c, Path{at}, ss)
+	(*c).c <- nil
+}
+
+func last(ts Path) *Triple {
 	t := ts[len(ts)-1]
 	return &t
 }
 
-func (g *Graph) Step(c *chan interface{}, ts []Triple, ss []*Stepper) {
-	at := last(ts)
+func (s *Stepper) exec(path Path) {
+	for _, f := range s.fs {
+		f(path)
+	}
+}
+
+func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) {
 	if len(ss) == 0 {
-		// *c <- at
+		(*c).c <- ts[1:]
 	} else {
+		at := last(ts)
 		s := ss[0]
 		if s.pred != nil {
 			if s.pred(*at) {
-				if s.emit != nil {
-					*c <- s.emit(ts[1:])
-				}
+				s.exec(ts[1:])
 				g.Step(c, ts, ss[1:])
 			}
 		} else {
@@ -57,9 +76,7 @@ func (g *Graph) Step(c *chan interface{}, ts []Triple, ss []*Stepper) {
 				t := IndexedTripleFromBytes(s.index, i.Key(), i.Value())
 				t = t.Permute(s.index).Permute(s.operm)
 				path := append(ts, *t)
-				if s.emit != nil {
-					*c <- s.emit(path[1:])
-				}
+				s.exec(path[1:])
 				g.Step(c, path, ss[1:])
 			}
 		}
@@ -67,7 +84,7 @@ func (g *Graph) Step(c *chan interface{}, ts []Triple, ss []*Stepper) {
 }
 
 func Out(p []byte) *Stepper {
-	return &Stepper{OPS, SPO, SPO, Triple{nil, p, nil, nil}, nil, nil, nil}
+	return &Stepper{OPS, SPO, SPO, Triple{nil, p, nil, nil}, nil, make([]func(Path), 0, 0), nil}
 }
 
 func (s *Stepper) Out(p []byte) *Stepper {
@@ -77,11 +94,11 @@ func (s *Stepper) Out(p []byte) *Stepper {
 }
 
 func In(p []byte) *Stepper {
-	return &Stepper{OPS, OPS, OPS, Triple{nil, p, nil, nil}, nil, nil, nil}
+	return &Stepper{OPS, OPS, OPS, Triple{nil, p, nil, nil}, nil, make([]func(Path), 0, 0), nil}
 }
 
 func Has(pred func(Triple) bool) *Stepper {
-	return &Stepper{SPO, SPO, SPO, Triple{}, pred, nil, nil}
+	return &Stepper{SPO, SPO, SPO, Triple{}, pred, make([]func(Path), 0, 0), nil}
 }
 
 func (s *Stepper) Has(pred func(Triple) bool) *Stepper {
@@ -96,21 +113,30 @@ func (s *Stepper) In(p []byte) *Stepper {
 	return next
 }
 
-func (s *Stepper) Emitter(f func([]Triple) interface{}) *Stepper {
-	replacement := &Stepper{s.iperm, s.index, s.operm, s.pattern, s.pred, f, nil}
-	replacement.previous = s.previous
-	return replacement
+// func (s *Stepper) Emitter(f func(Path) interface{}) *Stepper {
+// 	replacement := &Stepper{s.iperm, s.index, s.operm, s.pattern, s.pred, f, nil}
+// 	replacement.previous = s.previous
+// 	return replacement
+// }
+
+// func (s *Stepper) Emit() *Stepper {
+// 	return s.Emitter(func(ts Path) interface{} { return ts })
+// }
+
+func (s *Stepper) Do(f func(Path)) *Stepper {
+	s.fs = append(s.fs, f)
+	return s
 }
 
-func PathToString(ts []Triple) string {
+func (path *Path) ToString() string {
 	acc := "Path:"
-	for _, t := range ts {
-		acc += fmt.Sprintf(" %v", t.ToStrings())
+	for _, t := range *path {
+		acc += fmt.Sprintf(" %v", t.ToString())
 	}
 	return acc
 }
 
-func (s *Stepper) Walk(g *Graph, from Triple) *chan interface{} {
+func (s *Stepper) Walk(g *Graph, from Vertex) *Chan {
 	at := s
 	fmt.Printf("%p %v\n", at, *at)
 	ss := make([]*Stepper, 0, 1)
@@ -124,41 +150,83 @@ func (s *Stepper) Walk(g *Graph, from Triple) *chan interface{} {
 	return g.Walk(from, ss)
 }
 
+func (c *Chan) Do(f func(Path)) {
+	for {
+		x := <-(*c).c
+		if x == nil {
+			break
+		}
+		f(x)
+	}
+	close((*c).c)
+}
+
+func (c *Chan) Print() {
+	c.Do(func(path Path) { fmt.Printf("path %v\n", path.ToString()) })
+}
+
+func (c *Chan) Collect() []Path {
+	acc := make([]Path, 0, 0)
+	c.Do(func(ts Path) {
+		fmt.Printf("acc %T %v\n", ts, ts)
+		acc = append(acc, ts)
+	})
+	return acc
+}
+
 func StepsTest(g *Graph) {
 	has := func(t Triple) bool {
-		return true
+		return string(t.O) == "i"
 	}
 
-	t := Triple{nil, nil, []byte("a"), nil}
-	c := g.Walk(t, []*Stepper{
-		Out([]byte("p1")).Emitter(func(ts []Triple) interface{} { return "p1:" + string(last(ts).O) }),
+	v := Vertex([]byte("a"))
+	g.Walk(v, []*Stepper{
+		Out([]byte("p1")),
 		Out([]byte("p2")),
 		In([]byte("p4")),
 		Out([]byte("p1")),
-		Has(has).Emitter(func(ts []Triple) interface{} { return PathToString(ts) + " last" })})
-	for {
-		x := <-*c
-		if x == nil {
-			break
-		}
-		fmt.Printf("got %v\n", x)
-	}
+		Has(has)}).Print()
 
 	fmt.Printf("again\n")
 
-	t = Triple{nil, nil, []byte("a"), nil}
-	c = Out([]byte("p1")).Emitter(func(ts []Triple) interface{} { return "p1:" + string(last(ts).O) }).
+	Out([]byte("p1")).
 		Out([]byte("p2")).
 		In([]byte("p4")).
-		Out([]byte("p1")).Has(has).Emitter(func(ts []Triple) interface{} { return PathToString(ts) + " last" }).
-		Walk(g, t)
+		Out([]byte("p1")).
+		Has(has).
+		Walk(g, v).
+		Print()
 
-	for {
-		x := <-*c
-		if x == nil {
-			break
-		}
-		fmt.Printf("got %v\n", x)
-	}
+	fmt.Printf("again again\n")
 
+	Out(nil).
+		Out([]byte("p2")).
+		In([]byte("p4")).
+		Out([]byte("p1")).
+		Has(has).
+		Walk(g, v).
+		Print()
+
+	fmt.Printf("map print\n")
+
+	Out(nil).
+		Do(func(path Path) { fmt.Printf("doing s %v\n", path.ToString()) }).
+		Out([]byte("p2")).
+		Do(func(path Path) { fmt.Printf("doing 0 %v\n", path.ToString()) }).
+		In([]byte("p4")).
+		Do(func(path Path) { fmt.Printf("doing 1 %v\n", path.ToString()) }).
+		Out([]byte("p1")).
+		Has(func(t Triple) bool { return string(t.O) == "i" }).
+		Walk(g, v).
+		Do(func(path Path) { fmt.Printf("got %v\n", path.ToString()) })
+
+	fmt.Printf("for repl print\n")
+
+	Out([]byte("p1")).
+		Walk(g, v).
+		Print()
+
+	fmt.Printf("collected %v\n", Out([]byte("p1")).
+		Walk(g, v).
+		Collect())
 }

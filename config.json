@@ -1,5 +1,4 @@
 {"initial_compaction":false,
- "triples_file":"some.nt",
  "db_dir":"g",
  "stats_dump_period":300,
  "background_threads":2,
