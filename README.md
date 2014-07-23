@@ -24,8 +24,9 @@ Also see [Cayley](https://github.com/google/cayley).  I have a
 [fork](http://github.csv.comcast.com/jsteph206/cayley) that supports
 [`rocksdb`](http://rocksdb.org/).  I wrote Tinygraph primarily because
 I wanted to avoid Cayley's string interning (and reference counting)
-and I didn't want to rewrite by rocksdb support for Cayley to store
-strings directly.  (The latter probably would be easy.)
+and I didn't want to rewrite
+[my rocksdb support for Cayley](http://github.csv.comcast.com/jsteph206/cayley/tree/master/graph/rocksdb)
+to store strings directly.  (The latter probably would be easy.)
 
 ## Status
 
