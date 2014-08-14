@@ -14,7 +14,7 @@ import (
 
 var filesToLoad = flag.String("load", "", "Files to load")
 var repl = flag.Bool("repl", false, "Run REPL")
-var onlyLang = flag.String("lang", "en", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
+var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {
