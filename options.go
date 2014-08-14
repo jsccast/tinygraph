@@ -5,7 +5,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	rocks "github.com/DanielMorsing/rocksdb"
+	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
 	"io/ioutil"
 	"strings"
 )

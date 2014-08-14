@@ -22,19 +22,19 @@ func (e *Env) Triple(s, p, o, v string) *Triple {
 }
 
 func (e *Env) Open(config string) *Graph {
-	g, err := GetGraph(config)
-	if err != nil {
-		fmt.Printf("Open %s error: %v\n", config, err)
+	g, opts := GetGraph(config)
+	if opts != nil {
+		fmt.Printf("Open %s error: %v\n", config)
 	}
 	return g
 }
 
-func (e *Env) Out(p string) *Stepper {
-	return Out([]byte(p))
+func (e *Env) Out(p []byte) *Stepper {
+	return Out(p)
 }
 
-func (e *Env) In(p string) *Stepper {
-	return In([]byte(p))
+func (e *Env) In(p []byte) *Stepper {
+	return In(p)
 }
 
 func (e *Env) Bs(s string) []byte {

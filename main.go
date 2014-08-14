@@ -1,8 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	rocks "github.com/DanielMorsing/rocksdb"
+	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -10,6 +11,10 @@ import (
 	"sync"
 	"time"
 )
+
+var filesToLoad = flag.String("load", "", "Files to load")
+var repl = flag.Bool("repl", false, "Run REPL")
+var onlyLang = flag.String("lang", "en", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {
@@ -79,18 +84,18 @@ func Load() {
 		WriteStatsLoop(g)
 	}
 
-	if filenames, ok := config.StringKey("triples_file"); ok {
-		wait := sync.WaitGroup{}
-		for _, filename := range strings.Split(filenames, ",") {
-			filename = strings.TrimSpace(filename)
-			fmt.Printf("loading triples: %s\n", filename)
-			wait.Add(1)
-			go g.LoadTriplesFromFile(filename, config, &wait)
-			// Stagger the threads a little.
-			time.Sleep(1 * time.Second)
-		}
-		wait.Wait()
+	// filenames,given := config.StringKey("triples_file")
+
+	wait := sync.WaitGroup{}
+	for _, filename := range strings.Split(*filesToLoad, ",") {
+		filename = strings.TrimSpace(filename)
+		fmt.Printf("loading triples: %s\n", filename)
+		wait.Add(1)
+		go g.LoadTriplesFromFile(filename, config, &wait)
+		// Stagger the threads a little.
+		time.Sleep(1 * time.Second)
 	}
+	wait.Wait()
 
 	fmt.Println(g.GetStats())
 	// fmt.Printf("Freebase check: %v\n", FreebaseCheck(g))
@@ -106,9 +111,14 @@ func Load() {
 }
 
 func main() {
+	flag.Parse()
 	RationalizeMaxProcs()
-	// Load()
-	REPL()
+	if *filesToLoad != "" {
+		Load()
+	}
+	if *repl {
+		REPL()
+	}
 }
 
 func DoPrint(g *Graph, index Index, label string, s string) bool {

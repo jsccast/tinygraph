@@ -62,14 +62,24 @@ ToDo: Document.
 
 It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
 
-ToDo: Say how.  (Basically just set `triples_file` in `config.json`.)
-
-It takes 4.5 seconds to load about 1M WordNet triples.
+```Shell
+wget http://wordnet-rdf.princeton.edu/wn31.nt.gz
+gzip -dc wn31.nt.gz | grep -F hyponym > hyponyms.nt
+gzip -dc wn31.nt.gz | grep -F hypernym > hypernyms.nt
+gzip -dc wn31.nt.gz  | grep -F label | grep -F '@eng .' > labels.nt
+cp config.json config.orig
+cp config.wordnet config.json
+go install
+tinygraph -load "hyponyms.nt,hypernyms.nt,labels.nt" -repl
+```
 
 Example query:
 
 ```Javascript
-paths = G.In("rdf-schema#label").Out(G.Bs("ontology#hyponym")).Out(G.Bs("rdf-schema#label")).Walk(g, G.Vertex("virus")).Collect();
+g = G.Open('config.json');
+label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
+hypo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hyponym");
+paths = G.In(label).Out(hypo).Out(label).Walk(g, G.Vertex("virus")).Collect();
 for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
 ```
 
@@ -240,3 +250,13 @@ next [http://rdf.freebase.com/ns/m.0h55n27 http://www.w3.org/2000/01/rdf-schema#
 ### Notes
 
 I sometimes [listened](images/load.mp3) to spot rates while doing other things.  Funny.
+
+
+### Installing Rocksdb
+
+```
+gcc -v # 4.7+
+sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev
+make shared_lib
+sudo cp librocksdb.so /usr/lib
+```

@@ -21,8 +21,6 @@ import (
 	"strings"
 )
 
-const onlyLang = "en"
-
 func isWhitespace(s uint8) bool {
 	return (s == '\t' || s == '\r' || s == ' ')
 }
@@ -140,7 +138,7 @@ func getQuotedPart(str string) (*string, string) {
 	} else if strings.HasPrefix(str[i:], "@") {
 		_, remainder = getUnquotedPart(str[i+1:])
 		lang := getLanguage(str[i:])
-		if lang != onlyLang {
+		if lang != *onlyLang {
 			return nil, ""
 		}
 		// out = lang + "@" + out
