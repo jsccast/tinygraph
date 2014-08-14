@@ -81,6 +81,12 @@ label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
 hypo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hyponym");
 paths = G.In(label).Out(hypo).Out(label).Walk(g, G.Vertex("virus")).Collect();
 for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
+
+
+label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
+hypo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hyponym");
+paths = G.In(label).Out(hypo).Out(label).Walk(g, G.Vertex("virus")).Collect();
+for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
 ```
 
 gives
@@ -259,4 +265,5 @@ gcc -v # 4.7+
 sudo apt-get install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev
 make shared_lib
 sudo cp librocksdb.so /usr/lib
+(cd /usr/include && sudo ln -s ~/rocksdb/include/rocksdb rocksdb)
 ```
