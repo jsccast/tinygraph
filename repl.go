@@ -23,8 +23,9 @@ func (e *Env) Triple(s, p, o, v string) *Triple {
 
 func (e *Env) Open(config string) *Graph {
 	g, opts := GetGraph(config)
-	if opts != nil {
-		fmt.Printf("Open %s error: %v\n", config)
+	if opts == nil {
+		// ToDo
+		fmt.Printf("Open %s mystery error", config)
 	}
 	return g
 }

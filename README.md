@@ -253,6 +253,45 @@ next [http://rdf.freebase.com/ns/m.0h55n27 http://www.w3.org/2000/01/rdf-schema#
 ```
 
 
+### Using the Javascript interface
+
+```Shell
+# In my dev Docker container ...
+cd /sdb/stephens/vagrant
+echo '{"db_dir":"freebase.en","read_only":true}' > freebase-read.js
+./tinygraph -repl
+```
+
+```Javascript
+g = G.Open('freebase-read.js');
+function desc(mid) { return G.Out(G.Bs("http://rdf.freebase.com/ns/common.topic.description")).Walk(g, G.Vertex(mid)).Collect()[0][0].ToStrings()[2]; }
+ebola = "http://rdf.freebase.com/ns/m.0h55n27";
+desc(ebola);
+```
+
+> Reston virus was first described in 1990 as a new "strain" of Ebola
+> virus, a result of mutation from Ebola virus. It is the single
+> member of the species Reston ebolavirus, which is included into the
+> genus Ebolavirus, family Filoviridae, order Mononegavirales. Reston
+> virus is named after Reston, Virginia, US, where the virus was first
+> discovered.  RESTV was discovered in crab-eating macaques from
+> Hazleton Laboratories in 1989. This attracted significant media
+> attention due to the proximity of Reston to the Washington, DC metro
+> area, and the lethality of a closely related Ebola virus. Despite
+> its status as a level-4 organism, Reston virus is non-pathogenic to
+> humans, though hazardous to monkeys; the perception of its lethality
+> was confounded due to the monkey's coinfection with Simian
+> hemorrhagic fever virus.
+
+```Javascript
+thing = "Ebola";
+p = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
+ss = G.In(p).Walk(g, G.Vertex(thing)).Collect();
+for (var i = 0; i < ss.length; i++) { console.log(desc(ss[i][0].ToStrings()[2])); }
+// Doesn't quite work ...
+```
+
+
 ### Notes
 
 I sometimes [listened](images/load.mp3) to spot rates while doing other things.  Funny.

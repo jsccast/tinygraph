@@ -15,6 +15,7 @@ import (
 var filesToLoad = flag.String("load", "", "Files to load")
 var repl = flag.Bool("repl", false, "Run REPL")
 var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
+var configFile = flag.String("config", "config.js", "Configuration file")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {
@@ -72,7 +73,7 @@ func GetGraph(configFilename string) (*Graph, *Options) {
 }
 
 func Load() {
-	g, config := GetGraph("config.json")
+	g, config := GetGraph(*configFile)
 	fmt.Println(g.GetStats())
 
 	if b, ok := config.BoolKey("initial_compaction"); ok && b {
