@@ -294,9 +294,9 @@ for (var i = 0; i < ss.length; i++) { console.log(desc(ss[i][0].ToStrings()[2]))
 Try to use the HTTP API to check to see what strings are aliases for topics.
 
 ```Shell
-cat <<EOF > js
+cat <<EOF > topic_js
 var candidates = ["Ebola", "fruitcake", "no such topic", "Triton"];
-alias = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
+var alias = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
 function countTopics(name) {
    return G.In(alias).Walk(G.Graph(), G.Vertex(name)).Collect().length;
 }
@@ -307,7 +307,45 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@js' http://localhost:9081/js
+curl --data-urlencode 'js@topic_js' http://localhost:9081/js
+```
+
+```Shell
+cat <<EOF > desc_js
+var candidates = ["Ebola", "fruitcake", "no such topic", "Triton"];
+
+var desc = G.Bs("http://rdf.freebase.com/ns/common.topic.description");
+function description(mid) {
+    console.log('description("' + mid + '")');
+	var ss = G.Out(desc).Walk(G.Graph(), G.Vertex(mid)).Collect();
+	var acc = [ ];
+	for (var i = 0; i < ss.length; i++) {
+        acc.push(ss[0][0].ToStrings()[2]);
+	}
+	return acc;
+}
+
+var alias = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
+function findTopics(name) {
+   var result = {}
+   result.ids = {}
+   var ss = G.In(alias).Walk(G.Graph(), G.Vertex(name)).Collect();
+   for (var i = 0; i < ss.length; i++) {
+	  var id = ss[i][0].ToStrings()[2];
+	  console.log('findTopics("' + name + '"): id ' + id);
+      result.ids[id] = description(id);
+   }
+   return result;
+}
+
+var result = {};
+for (var i = 0; i < candidates.length; i++) {
+	var candidate = candidates[i];
+    result[candidate] = findTopics(candidate);
+}
+result;
+EOF
+curl --data-urlencode 'js@desc_js' http://localhost:9081/js
 ```
 
 

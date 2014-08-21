@@ -31,7 +31,8 @@ func (e *Env) Graph() *Graph {
 
 func execute(js string) (interface{}, error) {
 	vm := otto.New()
-	vm.Set("G", new(Env))
+	initEnv(vm)
+
 	o, err := vm.Run(js)
 	if err != nil {
 		return nil, err

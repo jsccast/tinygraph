@@ -42,11 +42,22 @@ func (e *Env) Bs(s string) []byte {
 	return []byte(s)
 }
 
+func initEnv(vm *otto.Otto) {
+	vm.Set("G", new(Env))
+
+	vm.Set("toJS", func(call otto.FunctionCall) otto.Value {
+		result, err := vm.ToValue(call.Argument(0))
+		if err != nil {
+			panic(err)
+		}
+		return result
+	})
+}
+
 func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	vm := otto.New()
-	vm.Set("G", new(Env))
-
+	initEnv(vm)
 	for scanner.Scan() {
 		line := scanner.Text()
 		x, err := vm.Run(line)
