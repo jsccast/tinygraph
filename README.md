@@ -291,6 +291,26 @@ for (var i = 0; i < ss.length; i++) { console.log(desc(ss[i][0].ToStrings()[2]))
 // Doesn't quite work ...
 ```
 
+Try to use the HTTP API to check to see what strings are aliases for topics.
+
+```Shell
+cat <<EOF > js
+var candidates = ["Ebola", "fruitcake", "no such topic", "Triton"];
+alias = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
+function countTopics(name) {
+   return G.In(alias).Walk(G.Graph(), G.Vertex(name)).Collect().length;
+}
+var result = {};
+for (var i = 0; i < candidates.length; i++) {
+	var candidate = candidates[i];
+    result[candidate] = countTopics(candidate);
+}
+result;
+EOF
+curl --data-urlencode 'js@js' http://localhost:9081/js
+```
+
+
 
 ### Notes
 
