@@ -42,6 +42,24 @@ func (e *Env) Bs(s string) []byte {
 	return []byte(s)
 }
 
+func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
+	alloc := limit
+	if 10000 < alloc {
+		alloc = 10000
+	}
+	acc := make([][]string, 0, alloc)
+	g.Do(SPO, &Triple{[]byte(s), nil, nil, nil}, nil,
+		func(t *Triple) bool {
+			acc = append(acc, t.ToStrings())
+			limit--
+			if limit == 0 {
+				return false
+			}
+			return true
+		})
+	return acc
+}
+
 func initEnv(vm *otto.Otto) {
 	vm.Set("G", new(Env))
 
