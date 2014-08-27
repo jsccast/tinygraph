@@ -75,7 +75,7 @@ cat label.nt >> wordnet.nt
 tinygraph -config config.wordnet -load wordnet.nt -repl
 ```
 
-Example query:
+### Example WordNet queries
 
 ```Javascript
 g = G.Open("config.wordnet");
@@ -126,7 +126,9 @@ Republic of Cameroon
 ...
 ```
 
-Or use the HTTP interface:
+### Using the Tinygraph HTTP interface
+
+Start `tinygraph` with `-serve`.  Then:
 
 ```Shell
 cat <<EOF > holo_js
@@ -176,7 +178,7 @@ The previous work has given us a stored procedure.
 curl --data-urlencode 'js=holonyms("Africa")' http://localhost:8080/js
 ```
 
-A more elaborate example.  Find terms and look up their hypernyms.
+### Example: Recursive hypernyms
 
 ```Shell
 cat <<EOF > hyper_js
@@ -224,7 +226,7 @@ function gatherHypernyms(id, acc, uniq, recursive) {
 function hypernyms(term) {
   var acc = [];
   var uniq = {};
-  var ids = find("virus");
+  var ids = find(term);
   for (var i=0; i<ids.length; i++) {
       gatherHypernyms(ids[i], acc, uniq, true);
   }
@@ -236,8 +238,47 @@ EOF
 curl --data-urlencode 'js@hyper_js' http://localhost:8080/js
 ```
 
+Now that stuff should be available:
 
-Here are the WordNet relations:
+```Shell
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js
+```
+
+If you have [`jq`](http://stedolan.github.io/jq/):
+
+```Shell
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js | ./jq -c '.[]'
+```
+
+gives
+
+```
+["root vegetable"]
+["veg","vegetable","veggie"]
+["garden truck","green goods","green groceries","produce"]
+["food","solid food"]
+["solid"]
+["matter"]
+["physical entity"]
+["entity"]
+["cruciferous vegetable"]
+["crucifer","cruciferous plant"]
+["herb","herbaceous plant"]
+["tracheophyte","vascular plant"]
+["flora","plant","plant life"]
+["being","organism"]
+["animate thing","living thing"]
+["unit","whole"]
+["object","physical object"]
+["radish","radish plant"]
+["root"]
+["plant organ"]
+["plant part","plant structure"]
+["natural object"]
+```
+
+
+### WordNet relations
 
 ```Shell
 gzip -dc wn31.nt.gz | cut -d ' ' -f 2 | sort | uniq
