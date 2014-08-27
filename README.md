@@ -205,32 +205,33 @@ function labels(id) {
   return acc;
 }
 
-console.log("virus", find("virus"));
-var hyper = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hypernym");
-
-function gatherHypernyms(id, acc, uniq, recursive) {
-  var paths = G.Out(hyper).Walk(G.Graph(), G.Vertex(id)).Collect();
+function collect(rel, id, acc, uniq, recursive, level) {
+  var paths = G.Out(rel).Walk(G.Graph(), G.Vertex(id)).Collect();
   for (var i=0; i<paths.length; i++) {
 	  var h = paths[i][0].ToStrings()[2];
-      console.log(id, "hypernym", h);
+      console.log(id, "collected", h);
 	  if (!uniq[h]) {
           uniq[h] = true;
-		  acc.push(labels(h));
+		  acc.push({labels: labels(h), level: level});
 		  if (recursive) {
-			  gatherHypernyms(h, acc, uniq, recursive);
+			  collect(rel, h, acc, uniq, recursive, level+1);
 		  }
 	  }
   }
 }
 
-function hypernyms(term) {
+function recurse(rel, term) {
   var acc = [];
   var uniq = {};
   var ids = find(term);
   for (var i=0; i<ids.length; i++) {
-      gatherHypernyms(ids[i], acc, uniq, true);
+      collect(G.Bs(rel), ids[i], acc, uniq, true, 0);
   }
   return acc;
+}
+
+function hypernyms(term) {
+  return recurse("http://wordnet-rdf.princeton.edu/ontology#hypernym", term);
 }
 
 hypernyms("virus");
@@ -252,7 +253,7 @@ curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js | ./jq -
 
 gives
 
-```
+```Javascript
 ["root vegetable"]
 ["veg","vegetable","veggie"]
 ["garden truck","green goods","green groceries","produce"]
@@ -275,6 +276,25 @@ gives
 ["plant organ"]
 ["plant part","plant structure"]
 ["natural object"]
+```
+
+Cheap geography:
+
+```Shell
+curl --data-urlencode 'js=recurse("http://wordnet-rdf.princeton.edu/ontology#part_meronym","London")' \
+  http://localhost:8080/js | ./jq -c '.[]'
+```
+
+```Javascript
+{"labels":["England"],"level":0}
+{"labels":["Britain","Great Britain","U.K.","UK","United Kingdom","United Kingdom of Great Britain and Northern Ireland"],"level":1}
+{"labels":["British Isles"],"level":2}
+{"labels":["Atlantic","Atlantic Ocean"],"level":3}
+{"labels":["Europe"],"level":1}
+{"labels":["Occident","West"],"level":2}
+{"labels":["Eurasia"],"level":2}
+{"labels":["eastern hemisphere","orient"],"level":3}
+{"labels":["northern hemisphere"],"level":3}
 ```
 
 
