@@ -10,18 +10,13 @@ import (
 
 var httpdGraph *Graph
 
-func init() {
-	go func() {
-		config := "httpd.js"
-		if _, err := os.Stat(config); err == nil {
-			fmt.Fprintf(os.Stderr, "opening %s\n", config)
-			httpdGraph, _ = GetGraph(config)
-			http.HandleFunc("/js", handleJavascript)
-			port := ":8080"
-			fmt.Fprintf(os.Stderr, "start %s\n", port)
-			fmt.Fprintf(os.Stderr, "done %v\n", http.ListenAndServe(port, nil))
-		}
-	}()
+func runHttpd() {
+	fmt.Fprintf(os.Stderr, "opening %s\n", *configFile)
+	httpdGraph, _ = GetGraph(*configFile)
+	http.HandleFunc("/js", handleJavascript)
+	port := ":8080"
+	fmt.Fprintf(os.Stderr, "start %s\n", port)
+	fmt.Fprintf(os.Stderr, "done %v\n", http.ListenAndServe(port, nil))
 }
 
 // Sorry

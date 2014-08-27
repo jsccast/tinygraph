@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/robertkrimen/otto"
 	"os"
+	"strings"
 )
 
 // g = G.Open('config.json')
@@ -78,6 +79,9 @@ func REPL() {
 	initEnv(vm)
 	for scanner.Scan() {
 		line := scanner.Text()
+		if strings.TrimSpace(line) == "quit()" {
+			break
+		}
 		x, err := vm.Run(line)
 		fmt.Printf("%v (%v)\n", x, err)
 	}

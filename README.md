@@ -63,29 +63,29 @@ ToDo: Document.
 It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
 
 ```Shell
-wget http://wordnet-rdf.princeton.edu/wn31.nt.gz
-gzip -dc wn31.nt.gz | grep -F hyponym > hyponyms.nt
-gzip -dc wn31.nt.gz | grep -F hypernym > hypernyms.nt
-gzip -dc wn31.nt.gz  | grep -F label | grep -F '@eng .' > labels.nt
-cp config.json config.orig
-cp config.wordnet config.json
 go install
-tinygraph -load "hyponyms.nt,hypernyms.nt,labels.nt" -repl
+wget http://wordnet-rdf.princeton.edu/wn31.nt.gz
+rm -f wordnet.nt
+for REL in hyponym hypernym meronym holonym; do
+    gzip -dc wn31.nt.gz | grep -F $REL > $REL.nt
+	cat $REL.nt >> wordnet.nt
+done
+gzip -dc wn31.nt.gz  | grep -F label | grep -F '@eng .' > label.nt
+cat label.nt >> wordnet.nt
+tinygraph -config config.wordnet -load wordnet.nt -repl
 ```
 
 Example query:
 
 ```Javascript
-g = G.Open('config.json');
+g = G.Open("config.wordnet");
 label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
 hypo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hyponym");
 paths = G.In(label).Out(hypo).Out(label).Walk(g, G.Vertex("virus")).Collect();
 for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
 
-
-label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
-hypo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hyponym");
-paths = G.In(label).Out(hypo).Out(label).Walk(g, G.Vertex("virus")).Collect();
+holo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#part_holonym");
+paths = G.In(label).Out(holo).Out(label).Walk(g, G.Vertex("Africa")).Collect();
 for (var i=0; i<paths.length; i++) { console.log(paths[i][2].ToStrings()[2]); }
 ```
 
@@ -103,6 +103,73 @@ tumor virus
 vector
 ```
 
+and
+
+```
+Barbary
+Nubia
+Mahgrib
+Mahgrib
+African nation
+African nation
+East Africa
+South West Africa
+South West Africa
+South West Africa
+Republic of Angola
+Republic of Angola
+Republic of Burundi
+Republic of Burundi
+Republic of Cameroon
+Republic of Cameroon
+Republic of Cameroon
+...
+```
+
+Or use the HTTP interface:
+
+```Shell
+cat <<EOF > holo_js
+function holonyms(term) {
+  var label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
+  var holo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#part_holonym");
+  var paths = G.In(label).Out(holo).Out(label).Walk(G.Graph(), G.Vertex(term)).Collect();
+  var uniq = {};
+  var acc = [];
+  for (var i=0; i<paths.length; i++) {
+	  var h = paths[i][2].ToStrings()[2];
+	  console.log(h);
+	  if (!uniq[h]) {
+		  acc.push(h);
+	  }
+      uniq[h] = true;
+  }
+  return acc;
+}
+holonyms("Africa");
+EOF
+curl --data-urlencode 'js@holo_js' http://localhost:8080/js
+```
+
+```Javascript
+[
+    "Barbary",
+    "Nubia",
+    "Mahgrib",
+    "African nation",
+    "East Africa",
+    "South West Africa",
+    "Republic of Angola",
+    "Republic of Burundi",
+    "Republic of Cameroon",
+    "Central African Republic",
+    "Tchad",
+    "Republic of the Congo",
+    "Zaire",
+	...
+]
+```
+
 
 ## Freebase
 
@@ -114,6 +181,8 @@ Summary: I processed 2,638,544,493 lines (356,018,834,809 bytes) into
 database is 90GB.  So we can run all of Freebase out of RAM.
 
 But: Still verifying that processing.
+
+See below for some example queries.
 
 
 ### Machine
@@ -261,6 +330,49 @@ cd /sdb/stephens/vagrant
 echo '{"db_dir":"freebase.en","read_only":true}' > freebase-read.js
 ./tinygraph -repl
 ```
+
+```Shell
+cat <<EOF > foo
+G.Scan(G.Graph(), G.Bs("http://rdf.freebase.com/ns/m.0h55n27"), 100);
+EOF
+curl --data-urlencode 'js@foo' http://localhost:9081/js
+```
+
+```Javascript
+[
+    [
+      "http://rdf.freebase.com/ns/m.0h55n27",
+      "http://rdf.freebase.com/key/wikipedia.en",
+      "America_ebolavirus",
+      ""
+    ],
+    [
+      "http://rdf.freebase.com/ns/m.0h55n27",
+      "http://rdf.freebase.com/key/wikipedia.en",
+      "EBOV-R",
+      ""
+    ],
+    [
+      "http://rdf.freebase.com/ns/m.0h55n27",
+      "http://rdf.freebase.com/key/wikipedia.en",
+      "Ebola_Reston",
+      ""
+    ],
+    [
+      "http://rdf.freebase.com/ns/m.0h55n27",
+      "http://rdf.freebase.com/key/wikipedia.en",
+      "REBOV",
+      ""
+    ],
+    [
+      "http://rdf.freebase.com/ns/m.0h55n27",
+      "http://rdf.freebase.com/key/wikipedia.en",
+      "RESTV",
+      ""
+    ], ...
+]
+```
+
 
 ```Javascript
 g = G.Open('freebase-read.js');

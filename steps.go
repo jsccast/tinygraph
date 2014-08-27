@@ -138,15 +138,12 @@ func (path *Path) ToString() string {
 
 func (s *Stepper) Walk(g *Graph, from Vertex) *Chan {
 	at := s
-	fmt.Printf("%p %v\n", at, *at)
 	ss := make([]*Stepper, 0, 1)
 	ss = append(ss, at)
 	for at.previous != nil {
 		ss = append([]*Stepper{at.previous}, ss...)
 		at = at.previous
-		fmt.Printf("%p %v\n", at, *at)
 	}
-	fmt.Printf("steps %v\n", ss)
 	return g.Walk(from, ss)
 }
 
@@ -168,7 +165,6 @@ func (c *Chan) Print() {
 func (c *Chan) Collect() []Path {
 	acc := make([]Path, 0, 0)
 	c.Do(func(ts Path) {
-		fmt.Printf("acc %T %v\n", ts, ts)
 		acc = append(acc, ts)
 	})
 	return acc

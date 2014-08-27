@@ -14,6 +14,7 @@ import (
 
 var filesToLoad = flag.String("load", "", "Files to load")
 var repl = flag.Bool("repl", false, "Run REPL")
+var serve = flag.Bool("serve", false, "Start HTTPD server")
 var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
 var configFile = flag.String("config", "config.js", "Configuration file")
 
@@ -117,9 +118,23 @@ func main() {
 	if *filesToLoad != "" {
 		Load()
 	}
-	if *repl {
-		REPL()
+	var wg sync.WaitGroup
+
+	if *serve {
+		wg.Add(1)
+		go func() {
+			runHttpd()
+			wg.Done()
+		}()
 	}
+	if *repl {
+		wg.Add(1)
+		go func() {
+			REPL()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
 
 func DoPrint(g *Graph, index Index, label string, s string) bool {
