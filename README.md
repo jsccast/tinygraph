@@ -140,9 +140,9 @@ function holonyms(term) {
 	  var h = paths[i][2].ToStrings()[2];
 	  console.log(h);
 	  if (!uniq[h]) {
+          uniq[h] = true;
 		  acc.push(h);
 	  }
-      uniq[h] = true;
   }
   return acc;
 }
@@ -176,6 +176,136 @@ The previous work has given us a stored procedure.
 curl --data-urlencode 'js=holonyms("Africa")' http://localhost:8080/js
 ```
 
+A more elaborate example.  Find terms and look up their hypernyms.
+
+```Shell
+cat <<EOF > hyper_js
+var label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
+
+function find(term) {
+  var paths = G.In(label).Walk(G.Graph(), G.Vertex(term)).Collect();
+  var acc = [];
+  for (var i=0; i<paths.length; i++) {
+	  var id = paths[i][0].ToStrings()[2];
+      acc.push(id);
+  }
+  return acc;
+}
+
+function labels(id) {
+  var paths = G.Out(label).Walk(G.Graph(), G.Vertex(id)).Collect();
+  var acc = [];
+  for (var i=0; i<paths.length; i++) {
+	  var name = paths[i][0].ToStrings()[2];
+	  console.log("label", name);
+      acc.push(name);
+  }
+  return acc;
+}
+
+console.log("virus", find("virus"));
+var hyper = G.Bs("http://wordnet-rdf.princeton.edu/ontology#hypernym");
+
+function gatherHypernyms(id, acc, uniq, recursive) {
+  var paths = G.Out(hyper).Walk(G.Graph(), G.Vertex(id)).Collect();
+  for (var i=0; i<paths.length; i++) {
+	  var h = paths[i][0].ToStrings()[2];
+      console.log(id, "hypernym", h);
+	  if (!uniq[h]) {
+          uniq[h] = true;
+		  acc.push(labels(h));
+		  if (recursive) {
+			  gatherHypernyms(h, acc, uniq, recursive);
+		  }
+	  }
+  }
+}
+
+function hypernyms(term) {
+  var acc = [];
+  var uniq = {};
+  var ids = find("virus");
+  for (var i=0; i<ids.length; i++) {
+      gatherHypernyms(ids[i], acc, uniq, true);
+  }
+  return acc;
+}
+
+hypernyms("virus");
+EOF
+curl --data-urlencode 'js@hyper_js' http://localhost:8080/js
+```
+
+
+Here are the WordNet relations:
+
+```Shell
+gzip -dc wn31.nt.gz | cut -d ' ' -f 2 | sort | uniq
+<http://lemon-model.net/lemon#canonicalForm>
+<http://lemon-model.net/lemon#decomposition>
+<http://lemon-model.net/lemon#otherForm>
+<http://lemon-model.net/lemon#reference>
+<http://lemon-model.net/lemon#sense>
+<http://lemon-model.net/lemon#writtenRep>
+<http://wordnet-rdf.princeton.edu/ontology#action>
+<http://wordnet-rdf.princeton.edu/ontology#adjposition>
+<http://wordnet-rdf.princeton.edu/ontology#agent>
+<http://wordnet-rdf.princeton.edu/ontology#also>
+<http://wordnet-rdf.princeton.edu/ontology#antonym>
+<http://wordnet-rdf.princeton.edu/ontology#attribute>
+<http://wordnet-rdf.princeton.edu/ontology#beneficiary>
+<http://wordnet-rdf.princeton.edu/ontology#cause>
+<http://wordnet-rdf.princeton.edu/ontology#creator>
+<http://wordnet-rdf.princeton.edu/ontology#derivation>
+<http://wordnet-rdf.princeton.edu/ontology#domain_category>
+<http://wordnet-rdf.princeton.edu/ontology#domain_member_category>
+<http://wordnet-rdf.princeton.edu/ontology#domain_member_region>
+<http://wordnet-rdf.princeton.edu/ontology#domain_member_usage>
+<http://wordnet-rdf.princeton.edu/ontology#domain_region>
+<http://wordnet-rdf.princeton.edu/ontology#domain_usage>
+<http://wordnet-rdf.princeton.edu/ontology#entail>
+<http://wordnet-rdf.princeton.edu/ontology#experiencer>
+<http://wordnet-rdf.princeton.edu/ontology#gloss>
+<http://wordnet-rdf.princeton.edu/ontology#goal>
+<http://wordnet-rdf.princeton.edu/ontology#hypernym>
+<http://wordnet-rdf.princeton.edu/ontology#hyponym>
+<http://wordnet-rdf.princeton.edu/ontology#instance_hypernym>
+<http://wordnet-rdf.princeton.edu/ontology#instance_hyponym>
+<http://wordnet-rdf.princeton.edu/ontology#instrument>
+<http://wordnet-rdf.princeton.edu/ontology#lexical_domain>
+<http://wordnet-rdf.princeton.edu/ontology#lex_id>
+<http://wordnet-rdf.princeton.edu/ontology#location>
+<http://wordnet-rdf.princeton.edu/ontology#member_holonym>
+<http://wordnet-rdf.princeton.edu/ontology#member_meronym>
+<http://wordnet-rdf.princeton.edu/ontology#old_sense_key>
+<http://wordnet-rdf.princeton.edu/ontology#part_holonym>
+<http://wordnet-rdf.princeton.edu/ontology#participle>
+<http://wordnet-rdf.princeton.edu/ontology#part_meronym>
+<http://wordnet-rdf.princeton.edu/ontology#part_of_speech>
+<http://wordnet-rdf.princeton.edu/ontology#patient>
+<http://wordnet-rdf.princeton.edu/ontology#pertainym>
+<http://wordnet-rdf.princeton.edu/ontology#phrase_type>
+<http://wordnet-rdf.princeton.edu/ontology#product>
+<http://wordnet-rdf.princeton.edu/ontology#result>
+<http://wordnet-rdf.princeton.edu/ontology#sample>
+<http://wordnet-rdf.princeton.edu/ontology#sense_number>
+<http://wordnet-rdf.princeton.edu/ontology#sense_tag>
+<http://wordnet-rdf.princeton.edu/ontology#similar>
+<http://wordnet-rdf.princeton.edu/ontology#substance_holonym>
+<http://wordnet-rdf.princeton.edu/ontology#substance_meronym>
+<http://wordnet-rdf.princeton.edu/ontology#synset_member>
+<http://wordnet-rdf.princeton.edu/ontology#tag_count>
+<http://wordnet-rdf.princeton.edu/ontology#theme>
+<http://wordnet-rdf.princeton.edu/ontology#translation>
+<http://wordnet-rdf.princeton.edu/ontology#verb_frame_sentence>
+<http://wordnet-rdf.princeton.edu/ontology#verb_group>
+<http://wordnet-rdf.princeton.edu/ontology#verbnet_class>
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#first>
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest>
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+<http://www.w3.org/2000/01/rdf-schema#label>
+<http://www.w3.org/2002/07/owl#sameAs>
+```
 
 
 ## Freebase
