@@ -9,6 +9,7 @@ import (
 )
 
 var httpdGraph *Graph
+var httpVM *otto.Otto
 
 func runHttpd() {
 	fmt.Fprintf(os.Stderr, "opening %s\n", *configFile)
@@ -24,17 +25,6 @@ func (e *Env) Graph() *Graph {
 	return httpdGraph
 }
 
-func execute(js string) (interface{}, error) {
-	vm := otto.New()
-	initEnv(vm)
-
-	o, err := vm.Run(js)
-	if err != nil {
-		return nil, err
-	}
-	return o.Export()
-}
-
 func handleJavascript(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	js := r.FormValue("js")
@@ -42,7 +32,28 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 		js = "{};"
 	}
 	fmt.Fprintf(os.Stderr, "executing %s\n", js)
-	x, err := execute(js)
+
+	var vm *otto.Otto
+	if *sharedHttpVM {
+		if httpVM == nil {
+			httpVM = otto.New()
+			initEnv(httpVM)
+		}
+		vm = httpVM
+	} else {
+		vm = otto.New()
+		initEnv(vm)
+	}
+
+	o, err := vm.Run(js)
+
+	if err != nil {
+		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
+		return
+	}
+
+	x, err := o.Export()
+
 	fmt.Fprintf(os.Stderr, "got %v (%v)\n", x, err)
 	if err != nil {
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)

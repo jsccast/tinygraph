@@ -17,6 +17,7 @@ var repl = flag.Bool("repl", false, "Run REPL")
 var serve = flag.Bool("serve", false, "Start HTTPD server")
 var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
 var configFile = flag.String("config", "config.js", "Configuration file")
+var sharedHttpVM = flag.Bool("sharevm", true, "Use a shared Javascript VM for the HTTP service")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {

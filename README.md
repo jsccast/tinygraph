@@ -170,6 +170,13 @@ curl --data-urlencode 'js@holo_js' http://localhost:8080/js
 ]
 ```
 
+The previous work has given us a stored procedure.
+
+```
+curl --data-urlencode 'js=holonyms("Africa")' http://localhost:8080/js
+```
+
+
 
 ## Freebase
 
