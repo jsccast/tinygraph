@@ -205,33 +205,38 @@ function labels(id) {
   return acc;
 }
 
-function collect(rel, id, acc, uniq, recursive, level) {
-  var paths = G.Out(rel).Walk(G.Graph(), G.Vertex(id)).Collect();
+function collect(rel, id, acc, uniq, recursive, reverse, maxDepth, depth) {
+  var paths;
+  if (reverse) {
+     paths = G.In(rel).Walk(G.Graph(), G.Vertex(id)).Collect();
+  } else {
+     paths = G.Out(rel).Walk(G.Graph(), G.Vertex(id)).Collect();
+  }
   for (var i=0; i<paths.length; i++) {
 	  var h = paths[i][0].ToStrings()[2];
       console.log(id, "collected", h);
 	  if (!uniq[h]) {
           uniq[h] = true;
-		  acc.push({labels: labels(h), level: level});
-		  if (recursive) {
-			  collect(rel, h, acc, uniq, recursive, level+1);
+		  acc.push({labels: labels(h), depth: depth});
+		  if (recursive && depth <= maxDepth) {
+			  collect(rel, h, acc, uniq, recursive, reverse, depth+1);
 		  }
 	  }
   }
 }
 
-function recurse(rel, term) {
+function recurse(rel, reverse, maxDepth, term) {
   var acc = [];
   var uniq = {};
   var ids = find(term);
   for (var i=0; i<ids.length; i++) {
-      collect(G.Bs(rel), ids[i], acc, uniq, true, 0);
+      collect(G.Bs(rel), ids[i], acc, uniq, true, reverse, maxDepth, 0);
   }
   return acc;
 }
 
 function hypernyms(term) {
-  return recurse("http://wordnet-rdf.princeton.edu/ontology#hypernym", term);
+  return recurse("http://wordnet-rdf.princeton.edu/ontology#hypernym", false, 1000, term);
 }
 
 hypernyms("virus");
