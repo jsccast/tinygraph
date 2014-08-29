@@ -35,8 +35,16 @@ func (e *Env) Out(p []byte) *Stepper {
 	return Out(p)
 }
 
+func (e *Env) AllOut() *Stepper {
+	return AllOut()
+}
+
 func (e *Env) In(p []byte) *Stepper {
 	return In(p)
+}
+
+func (e *Env) AllIn() *Stepper {
+	return AllIn()
 }
 
 func (e *Env) Bs(s string) []byte {

@@ -93,8 +93,34 @@ func (s *Stepper) Out(p []byte) *Stepper {
 	return next
 }
 
+func AllOut() *Stepper {
+	return &Stepper{OPS, SPO, SPO, Triple{nil, nil, nil, nil}, nil, make([]func(Path), 0, 0), nil}
+}
+
+func (s *Stepper) AllOut() *Stepper {
+	next := AllOut()
+	next.previous = s
+	return next
+}
+
 func In(p []byte) *Stepper {
 	return &Stepper{OPS, OPS, OPS, Triple{nil, p, nil, nil}, nil, make([]func(Path), 0, 0), nil}
+}
+
+func (s *Stepper) In(p []byte) *Stepper {
+	next := In(p)
+	next.previous = s
+	return next
+}
+
+func AllIn() *Stepper {
+	return &Stepper{OPS, OPS, OPS, Triple{nil, nil, nil, nil}, nil, make([]func(Path), 0, 0), nil}
+}
+
+func (s *Stepper) AllIn() *Stepper {
+	next := AllIn()
+	next.previous = s
+	return next
 }
 
 func Has(pred func(Triple) bool) *Stepper {
@@ -103,12 +129,6 @@ func Has(pred func(Triple) bool) *Stepper {
 
 func (s *Stepper) Has(pred func(Triple) bool) *Stepper {
 	next := Has(pred)
-	next.previous = s
-	return next
-}
-
-func (s *Stepper) In(p []byte) *Stepper {
-	next := In(p)
 	next.previous = s
 	return next
 }
@@ -170,12 +190,28 @@ func (c *Chan) Collect() []Path {
 	return acc
 }
 
-func StepsTest(g *Graph) {
+func StepsTest() {
+
+	g, _ := GetGraph("config.test")
+
+	g.WriteIndexedTriple(TripleFromStrings("a", "p1", "b", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("a", "p1", "f", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("a", "p5", "j", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("b", "p2", "c", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("c", "p3", "d", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("c", "p3", "e", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("g", "p4", "c", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("g", "p1", "h", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("g", "p1", "i", "today"), nil)
+
 	has := func(t Triple) bool {
 		return string(t.O) == "i"
 	}
 
 	v := Vertex([]byte("a"))
+	g.Walk(v, []*Stepper{AllOut()}).Print()
+
+	v = Vertex([]byte("a"))
 	g.Walk(v, []*Stepper{
 		Out([]byte("p1")),
 		Out([]byte("p2")),
