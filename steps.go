@@ -178,6 +178,18 @@ func (c *Chan) Do(f func(Path)) {
 	close((*c).c)
 }
 
+func (c *Chan) DoSome(f func(Path), limit int64) {
+	n := int64(0)
+	for {
+		x := <-(*c).c
+		if x == nil || n == limit {
+			break
+		}
+		f(x)
+	}
+	close((*c).c)
+}
+
 func (c *Chan) Print() {
 	c.Do(func(path Path) { fmt.Printf("path %v\n", path.ToString()) })
 }
@@ -187,6 +199,14 @@ func (c *Chan) Collect() []Path {
 	c.Do(func(ts Path) {
 		acc = append(acc, ts)
 	})
+	return acc
+}
+
+func (c *Chan) CollectSome(limit int64) []Path {
+	acc := make([]Path, 0, 0)
+	c.DoSome(func(ts Path) {
+		acc = append(acc, ts)
+	}, limit)
 	return acc
 }
 
