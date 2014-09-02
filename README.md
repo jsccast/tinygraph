@@ -711,7 +711,7 @@ EOF
 curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
 ```
 
-Using iterators:
+A variation using iterators:
 
 ```Shell
 cat <<EOF > iter.js
@@ -720,13 +720,58 @@ var rel = G.Bs("http://rdf.freebase.com/ns/type.object.name")
 var i = G.AllOut().Out(rel).Walk(G.Graph(), G.Vertex(id)).Iter(10);
 var acc = []
 for (var x = i.Next(); !i.IsClosed(); x = i.Next()) {
-    acc.push(x[1].ToStrings()[2]);
+    var tuple = [x[0].ToStrings()[1], x[1].ToStrings()[2]];
+    acc.push(tuple);
 }
 acc;
 EOF
 curl --data-urlencode 'js@iter.js' http://localhost:9080/js
 ```
 
+```Javascript
+[
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_area_type",
+      "Sovereign state"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Western Region, Ghana"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Brong-Ahafo Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Upper West Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Ashanti Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Upper East Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Central Region, Ghana"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Eastern Region, Ghana"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Greater Accra Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Northern Region, Ghana"
+    ]
+]
+```
 
 How many triples starting at Ghana?
 
