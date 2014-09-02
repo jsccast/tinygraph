@@ -115,7 +115,9 @@ func (g *Graph) NewIndexIterator(index Index, on *Triple, opts *rocks.ReadOption
 		opts = g.ropts
 	}
 	from := withIndex(index, on.StartKey())
+	fmt.Printf("Next fr %v\n", from)
 	to := withIndex(index, on.KeyPrefix())
+	fmt.Printf("Next to %v\n", to)
 	i := &Iterator{g.db.NewIterator(opts), from, to, Init}
 	return i
 }
@@ -137,8 +139,10 @@ func (i *Iterator) Next() bool {
 	}
 
 	bs := i.i.Key()
+	fmt.Printf("Next at %v\n", bs)
 
 	if !bytes.HasPrefix(bs, i.to) {
+		fmt.Printf("   done %v\n", i.to)
 		i.state = Done
 		return false
 	}

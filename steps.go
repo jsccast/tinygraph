@@ -94,9 +94,7 @@ func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) bool {
 			if s.pattern.S != nil {
 				u.S = s.pattern.S
 			}
-			if s.pattern.P != nil {
-				u.P = s.pattern.P
-			}
+			u.P = s.pattern.P
 			u.O = nil
 			i := g.NewIndexIterator(s.index, u, nil)
 			for i.Next() {
