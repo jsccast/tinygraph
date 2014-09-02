@@ -100,7 +100,7 @@ func (t *Triple) Val() []byte {
 	return t.V
 }
 
-func (t *Triple) Prefix() []byte {
+func (t *Triple) StartKey() []byte {
 	k := make([]byte, 0, len(t.S)+len(t.P)+len(t.O)+3)
 	if len(t.S) == 0 {
 		return k
@@ -108,40 +108,23 @@ func (t *Triple) Prefix() []byte {
 	k = append(k, t.S...)
 	k = append(k, byte(0))
 
-	if len(t.P) == 0 {
-		return k
-	}
 	k = append(k, t.P...)
 	k = append(k, byte(0))
 
-	if len(t.O) == 0 {
-		return k
-	}
 	k = append(k, t.O...)
 	k = append(k, byte(0))
 
 	return k
 }
 
-func (t *Triple) EndPrefix() []byte {
-	prefix := t.Prefix()
+func (t *Triple) KeyPrefix() []byte {
+	prefix := t.StartKey()
 	i := len(prefix) - 1
-	for 0 <= i {
-		b := prefix[i]
-		if b == 0 {
-			i--
-			continue
-		}
-		b++
-		if b < prefix[i] {
-			prefix[i] = 0
-			i--
-		} else {
-			prefix[i] = b
-			break
-		}
+	for 0 <= i && prefix[i] == 0 {
+		i--
 	}
-	return prefix
+
+	return prefix[0 : i+2]
 }
 
 type Index byte

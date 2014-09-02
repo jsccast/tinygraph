@@ -114,8 +114,8 @@ func (g *Graph) NewIndexIterator(index Index, on *Triple, opts *rocks.ReadOption
 	if opts == nil {
 		opts = g.ropts
 	}
-	from := withIndex(index, on.Prefix())
-	to := withIndex(index, on.EndPrefix())
+	from := withIndex(index, on.StartKey())
+	to := withIndex(index, on.KeyPrefix())
 	i := &Iterator{g.db.NewIterator(opts), from, to, Init}
 	return i
 }
@@ -138,7 +138,7 @@ func (i *Iterator) Next() bool {
 
 	bs := i.i.Key()
 
-	if 1 == bytes.Compare(bs, i.to) {
+	if !bytes.HasPrefix(bs, i.to) {
 		i.state = Done
 		return false
 	}
