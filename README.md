@@ -38,6 +38,7 @@ ToDo:
 2. Test cases.
 3. Docs (especially configuration).
 4. Document Wordnet load/use.
+5. Buffered Stepper channels.
 
 
 ## Query language
@@ -785,7 +786,7 @@ EOF
 curl --data-urlencode 'js@countout.js' http://localhost:9080/js
 ```
 
-Answer: 5401.
+Answer: 3,288.
 
 How about for [the Clash](https://www.freebase.com/m/07h76)?
 
@@ -793,7 +794,7 @@ How about for [the Clash](https://www.freebase.com/m/07h76)?
 curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
 ```
 
-Answer: 1992 (with a 299ms round trip from Austin to CSV using `curl`).
+Answer: 1,255.
 
 Now for the "in" direction:
 
@@ -805,10 +806,111 @@ function countin(id) {
 EOF
 curl --data-urlencode 'js@countin.js' http://localhost:9080/js
 curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.035dk")' http://localhost:9080/js
-curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
+curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
 ```
 
-3,557 for Ghana and 1,119 for the Clash.
+2,246 for Ghana and 814 for the Clash.
+
+In this example, we look up the Wikipedia topic
+[Ghana](http://en.wikipedia.org/wiki/Ghana)
+[in Freebase](https://www.freebase.com/m/035dk), and we sample some
+properties of that topic.
+
+```Shell
+cat <<EOF > wfacts.js
+function wikipediaFreebaseFacts(wikiTitle,limit,sample) {
+   if (!sample) {
+      sample = 1.0;
+   }
+   if (!limit) {
+      limit = 128;
+   }
+   var titleRel = G.Bs("http://rdf.freebase.com/key/wikipedia.en_title");
+   var nameRel = G.Bs("http://rdf.freebase.com/ns/type.object.name")
+   var i = G.In(titleRel).AllOut().Out(nameRel).Walk(G.Graph(), G.Vertex(wikiTitle)).Iter(limit);
+   var acc = [];
+   for (var x = i.Next(); !i.IsClosed(); x = i.Next()) {
+       if (Math.random() <= sample) {
+          var tuple = [x[1].ToStrings()[1], x[2].ToStrings()[2]];
+          acc.push(tuple);
+       }
+   }
+   return acc;
+}
+wikipediaFreebaseFacts("Ghana", 100, 0.2);
+EOF
+curl --data-urlencode 'js@wfacts.js' http://localhost:9080/js > foo
+```
+
+```Javascript
+[
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_area_type",
+      "Sovereign state"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Central Region, Ghana"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_children",
+      "Volta Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.administrative_parent",
+      "Earth"
+    ],
+    [
+      "http://rdf.freebase.com/ns/base.aareas.schema.administrative_area.pertinent_type",
+      "Ghanaian metropolitan district"
+    ],
+    [
+      "http://rdf.freebase.com/ns/film.film_location.featured_in_films",
+      "Motherland"
+    ],
+    [
+      "http://rdf.freebase.com/ns/government.governmental_jurisdiction.agencies",
+      "Refugee Board"
+    ],
+    [
+      "http://rdf.freebase.com/ns/government.governmental_jurisdiction.government_positions",
+      "Vice President of Ghana"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.administrative_divisions",
+      "Ashanti Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.administrative_divisions",
+      "Greater Accra Region"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.internet_tld",
+      "gh"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.languages_spoken",
+      "Asante dialect"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.languages_spoken",
+      "Dagaare language"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.country.languages_spoken",
+      "Gonja Language"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.location.containedby",
+      "Africa"
+    ],
+    [
+      "http://rdf.freebase.com/ns/location.location.contains",
+      "Fort Prinzenstein"
+    ]
+  ]
+```
+
 
 
 ### Notes
@@ -825,3 +927,4 @@ make shared_lib
 sudo cp librocksdb.so /usr/lib
 (cd /usr/include && sudo ln -s ~/rocksdb/include/rocksdb rocksdb)
 ```
+

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sync/atomic"
 )
 
 type Stepper struct {
@@ -19,12 +18,12 @@ type Chants chan []Triple
 
 // We wrap because Otto wants us to.
 type Chan struct {
-	c     Chants
-	state uint32
+	c    Chants
+	done chan (struct{})
 }
 
 func NewChan() *Chan {
-	return &Chan{make(Chants), Open}
+	return &Chan{make(Chants, *chanBufferSize), make(chan (struct{}))}
 }
 
 const (
@@ -34,13 +33,8 @@ const (
 	Closed
 )
 
-func (c *Chan) IsClosed() bool {
-	return Closed == atomic.LoadUint32(&c.state)
-}
-
 func (c *Chan) Close() {
-	atomic.StoreUint32(&c.state, Closed)
-	close(c.c)
+	close(c.done)
 }
 
 type Vertex []byte
@@ -59,7 +53,9 @@ func (g *Graph) Walk(o Vertex, ss []*Stepper) *Chan {
 
 func (g *Graph) Launch(c *Chan, at Triple, ss []*Stepper) {
 	g.Step(c, Path{at}, ss)
-	if !c.IsClosed() {
+	select {
+	case <-c.done:
+	default:
 		(*c).c <- nil
 	}
 }
@@ -76,11 +72,13 @@ func (s *Stepper) exec(path Path) {
 }
 
 func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) bool {
-	if c.IsClosed() {
-		return false
-	}
 	if len(ss) == 0 {
-		(*c).c <- ts[1:]
+		select {
+		case _ = <-c.done:
+			return false
+		default:
+			(*c).c <- ts[1:]
+		}
 	} else {
 		at := last(ts)
 		s := ss[0]

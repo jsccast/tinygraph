@@ -139,10 +139,8 @@ func (i *Iterator) Next() bool {
 	}
 
 	bs := i.i.Key()
-	fmt.Printf("Next at %v\n", bs)
 
 	if !bytes.HasPrefix(bs, i.to) {
-		fmt.Printf("   done %v\n", i.to)
 		i.state = Done
 		return false
 	}

@@ -71,10 +71,6 @@ func (i *REPLIterator) Next() interface{} {
 		i.Close()
 		return nil
 	}
-	if i.c.IsClosed() {
-		i.Close()
-		return nil
-	}
 	i.n--
 	return <-(i.c).c
 }
