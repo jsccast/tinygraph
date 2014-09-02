@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync/atomic"
 )
 
 type Stepper struct {
@@ -18,7 +19,29 @@ type Chants chan []Triple
 
 // We wrap because Otto wants us to.
 type Chan struct {
-	c Chants
+	c     Chants
+	state uint32
+}
+
+func NewChan() *Chan {
+	return &Chan{make(Chants), Open}
+}
+
+const (
+	Open uint32 = iota
+
+	// ToDo: No this.  Need another channel for control.
+	Closed
+)
+
+func (c *Chan) IsClosed() bool {
+	return Closed == atomic.LoadUint32(&c.state)
+}
+
+func (c *Chan) Close() {
+	fmt.Printf("closing chan %p\n", c)
+	atomic.StoreUint32(&c.state, Closed)
+	close(c.c)
 }
 
 type Vertex []byte
@@ -30,14 +53,16 @@ func (v *Vertex) ToTriple() Triple {
 }
 
 func (g *Graph) Walk(o Vertex, ss []*Stepper) *Chan {
-	c := &Chan{make(Chants)}
+	c := NewChan()
 	go g.Launch(c, o.ToTriple(), ss)
 	return c
 }
 
 func (g *Graph) Launch(c *Chan, at Triple, ss []*Stepper) {
 	g.Step(c, Path{at}, ss)
-	(*c).c <- nil
+	if !c.IsClosed() {
+		(*c).c <- nil
+	}
 }
 
 func last(ts Path) *Triple {
@@ -51,8 +76,13 @@ func (s *Stepper) exec(path Path) {
 	}
 }
 
-func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) {
+func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) bool {
+	if c.IsClosed() {
+		fmt.Printf("chan %p is closed\n", c)
+		return false
+	}
 	if len(ss) == 0 {
+		fmt.Printf("chan %p closed? %v\n", c.IsClosed())
 		(*c).c <- ts[1:]
 	} else {
 		at := last(ts)
@@ -77,10 +107,14 @@ func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) {
 				t = t.Permute(s.index).Permute(s.operm)
 				path := append(ts, *t)
 				s.exec(path[1:])
-				g.Step(c, path, ss[1:])
+				if !g.Step(c, path, ss[1:]) {
+					return false
+				}
 			}
 		}
 	}
+
+	return true
 }
 
 func Out(p []byte) *Stepper {
@@ -175,7 +209,7 @@ func (c *Chan) Do(f func(Path)) {
 		}
 		f(x)
 	}
-	close((*c).c)
+	c.Close()
 }
 
 func (c *Chan) DoSome(f func(Path), limit int64) {
@@ -186,8 +220,9 @@ func (c *Chan) DoSome(f func(Path), limit int64) {
 			break
 		}
 		f(x)
+		n++
 	}
-	close((*c).c)
+	c.Close()
 }
 
 func (c *Chan) Print() {

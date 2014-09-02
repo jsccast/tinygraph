@@ -51,6 +51,23 @@ func (e *Env) Bs(s string) []byte {
 	return []byte(s)
 }
 
+func (c *Chan) DoSomeJS(jsf otto.Value, limit int64) {
+	n := int64(0)
+	for {
+		x := <-(*c).c
+		if x == nil || n == limit {
+			break
+		}
+		this := otto.UndefinedValue()
+		_, err := jsf.Call(this, x)
+		if err != nil {
+			panic(err)
+		}
+		n++
+	}
+	close((*c).c)
+}
+
 func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
 	alloc := limit
 	if 10000 < alloc {
