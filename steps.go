@@ -39,7 +39,6 @@ func (c *Chan) IsClosed() bool {
 }
 
 func (c *Chan) Close() {
-	fmt.Printf("closing chan %p\n", c)
 	atomic.StoreUint32(&c.state, Closed)
 	close(c.c)
 }
@@ -78,11 +77,9 @@ func (s *Stepper) exec(path Path) {
 
 func (g *Graph) Step(c *Chan, ts Path, ss []*Stepper) bool {
 	if c.IsClosed() {
-		fmt.Printf("chan %p is closed\n", c)
 		return false
 	}
 	if len(ss) == 0 {
-		fmt.Printf("chan %p closed? %v\n", c.IsClosed())
 		(*c).c <- ts[1:]
 	} else {
 		at := last(ts)
@@ -202,6 +199,7 @@ func (s *Stepper) Walk(g *Graph, from Vertex) *Chan {
 }
 
 func (c *Chan) Do(f func(Path)) {
+	defer c.Close()
 	for {
 		x := <-(*c).c
 		if x == nil {
@@ -209,10 +207,10 @@ func (c *Chan) Do(f func(Path)) {
 		}
 		f(x)
 	}
-	c.Close()
 }
 
 func (c *Chan) DoSome(f func(Path), limit int64) {
+	defer c.Close()
 	n := int64(0)
 	for {
 		x := <-(*c).c
@@ -222,7 +220,6 @@ func (c *Chan) DoSome(f func(Path), limit int64) {
 		f(x)
 		n++
 	}
-	c.Close()
 }
 
 func (c *Chan) Print() {

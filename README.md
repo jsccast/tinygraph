@@ -131,7 +131,7 @@ Republic of Cameroon
 Start `tinygraph` with `-serve`.  Then:
 
 ```Shell
-cat <<EOF > holo_js
+cat <<EOF > holo.js
 function holonyms(term) {
   var label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
   var holo = G.Bs("http://wordnet-rdf.princeton.edu/ontology#part_holonym");
@@ -150,7 +150,7 @@ function holonyms(term) {
 }
 holonyms("Africa");
 EOF
-curl --data-urlencode 'js@holo_js' http://localhost:8080/js
+curl --data-urlencode 'js@holo.js' http://localhost:9080/js
 ```
 
 ```Javascript
@@ -181,7 +181,7 @@ curl --data-urlencode 'js=holonyms("Africa")' http://localhost:8080/js
 ### Example: Recursive hypernyms
 
 ```Shell
-cat <<EOF > hyper_js
+cat <<EOF > hyper.js
 var label = G.Bs("http://www.w3.org/2000/01/rdf-schema#label");
 
 function find(term) {
@@ -241,19 +241,19 @@ function hypernyms(term) {
 
 hypernyms("virus");
 EOF
-curl --data-urlencode 'js@hyper_js' http://localhost:8080/js
+curl --data-urlencode 'js@hyper.js' http://localhost:9080/js
 ```
 
 Now that stuff should be available:
 
 ```Shell
-curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:9080/js
 ```
 
 If you have [`jq`](http://stedolan.github.io/jq/):
 
 ```Shell
-curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js | ./jq -c '.[]'
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:9080/js | ./jq -c '.[]'
 ```
 
 gives
@@ -622,8 +622,10 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@topic_js' http://localhost:9081/js
+curl --data-urlencode 'js@topic_js' http://localhost:9080/js
 ```
+
+Here's an example of looking up IDs and getting their descriptions.
 
 ```Shell
 cat <<EOF > desc_js
@@ -660,9 +662,108 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@desc_js' http://localhost:9081/js
+curl --data-urlencode 'js@desc_js' http://localhost:9080/js
 ```
 
+Find some knowledge re Ghana
+
+```Shell
+cat <<EOF > ghana.js
+var desc = G.Bs("http://rdf.freebase.com/ns/common.topic.description");
+function description(mid) {
+    console.log('description("' + mid + '")');
+	var ss = G.Out(desc).Walk(G.Graph(), G.Vertex(mid)).Collect();
+	var acc = [ ];
+	for (var i = 0; i < ss.length; i++) {
+        acc.push(ss[0][0].ToStrings()[2]);
+	}
+	return acc;
+}
+
+var id = "http://rdf.freebase.com/ns/m.035dk";
+var rel = G.Bs("http://rdf.freebase.com/ns/location.location.people_born_here");
+var ss = G.Out(rel).Walk(G.Graph(), G.Vertex(id)).Collect();
+var acc = [];
+var limit = 20
+for (var i = 0; i < ss.length && i < limit; i++) {
+    var p = ss[i][0].ToStrings()[2];
+    acc.push(description(p))
+}
+acc;
+EOF
+curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
+```
+
+A few triples from Ghana:
+
+```Shell
+cat <<EOF > ghana.js
+var id = "http://rdf.freebase.com/ns/m.035dk";
+var ss = G.AllOut().Walk(G.Graph(), G.Vertex(id)).CollectSome(1000);
+var acc = [];
+var limit = 1100;
+for (var i = 0; i < ss.length && i < limit; i++) {
+    var t = ss[i][0].ToStrings();
+    acc.push(t)
+}
+acc;
+EOF
+curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
+```
+
+Using iterators:
+
+```Shell
+cat <<EOF > iter.js
+var id = "http://rdf.freebase.com/ns/m.035dk";
+var rel = G.Bs("http://rdf.freebase.com/ns/type.object.name")
+var i = G.AllOut().Out(rel).Walk(G.Graph(), G.Vertex(id)).Iter(10);
+var acc = []
+for (var x = i.Next(); !i.IsClosed(); x = i.Next()) {
+    acc.push(x[1].ToStrings()[2]);
+}
+acc;
+EOF
+curl --data-urlencode 'js@iter.js' http://localhost:9080/js
+```
+
+
+How many triples starting at Ghana?
+
+```Shell
+cat <<EOF > countout.js
+function countout(id) {
+  return G.AllOut().Walk(G.Graph(), G.Vertex(id)).Collect().length;
+}
+countout("http://rdf.freebase.com/ns/m.035dk");
+EOF
+curl --data-urlencode 'js@countout.js' http://localhost:9080/js
+```
+
+Answer: 5401.
+
+How about for [the Clash](https://www.freebase.com/m/07h76)?
+
+```Shell
+curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
+```
+
+Answer: 1992 (with a 299ms round trip from Austin to CSV using `curl`).
+
+Now for the "in" direction:
+
+```Shell
+cat <<EOF > countin.js
+function countin(id) {
+  return G.AllIn().Walk(G.Graph(), G.Vertex(id)).Collect().length;
+}
+EOF
+curl --data-urlencode 'js@countin.js' http://localhost:9080/js
+curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.035dk")' http://localhost:9080/js
+curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
+```
+
+3,557 for Ghana and 1,119 for the Clash.
 
 
 ### Notes

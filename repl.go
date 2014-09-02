@@ -51,21 +51,36 @@ func (e *Env) Bs(s string) []byte {
 	return []byte(s)
 }
 
-func (c *Chan) DoSomeJS(jsf otto.Value, limit int64) {
-	n := int64(0)
-	for {
-		x := <-(*c).c
-		if x == nil || n == limit {
-			break
-		}
-		this := otto.UndefinedValue()
-		_, err := jsf.Call(this, x)
-		if err != nil {
-			panic(err)
-		}
-		n++
+type REPLIterator struct {
+	c     *Chan
+	n     int64
+	state uint32
+}
+
+func (i *REPLIterator) Close() {
+	i.state = Closed
+	i.c.Close()
+}
+
+func (i *REPLIterator) IsClosed() bool {
+	return i.state == Closed
+}
+
+func (i *REPLIterator) Next() interface{} {
+	if i.n <= 0 {
+		i.Close()
+		return nil
 	}
-	close((*c).c)
+	if i.c.IsClosed() {
+		i.Close()
+		return nil
+	}
+	i.n--
+	return <-(i.c).c
+}
+
+func (c *Chan) Iter(limit int64) *REPLIterator {
+	return &REPLIterator{c, limit, Open}
 }
 
 func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
