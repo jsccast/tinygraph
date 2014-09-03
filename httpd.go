@@ -15,9 +15,8 @@ func runHttpd() {
 	fmt.Fprintf(os.Stderr, "opening %s\n", *configFile)
 	httpdGraph, _ = GetGraph(*configFile)
 	http.HandleFunc("/js", handleJavascript)
-	port := ":8080"
-	fmt.Fprintf(os.Stderr, "start %s\n", port)
-	fmt.Fprintf(os.Stderr, "done %v\n", http.ListenAndServe(port, nil))
+	fmt.Fprintf(os.Stderr, "start %s\n", *httpPort)
+	fmt.Fprintf(os.Stderr, "done %v\n", http.ListenAndServe(*httpPort, nil))
 }
 
 // Sorry

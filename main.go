@@ -19,6 +19,7 @@ var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Free
 var configFile = flag.String("config", "config.js", "Configuration file")
 var sharedHttpVM = flag.Bool("sharevm", true, "Use a shared Javascript VM for the HTTP service")
 var chanBufferSize = flag.Int("chanbuf", 16, "Traversal emission buffer")
+var httpPort = flag.String("port", ":8080", "HTTP server port")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {

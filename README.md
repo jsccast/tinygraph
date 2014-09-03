@@ -3,16 +3,15 @@
 Goal: A very fast and efficient graph database that handle billions of
 vertexes and billions of edges on single machine.
 
-Motivation: Semantic-social movie recommendations, but that's another
-story.
+Motivation: Semantic-social movie recommendations, but that's [another
+story](http://github.csv.comcast.com/jsteph206/semanticrecs).
 
 The code is tiny, but the data can be single-machine big.
 
-As a proof-of-concept, we load
+As a proof-of-concept, I loaded
 [all of Freebase](https://developers.google.com/freebase/data), which
 is currently 2.6B triples and 350GB uncompressed.  See below for
 details.
-
 
 For storage, the code currently requires
 [`rocksdb`](http://rocksdb.org/), but many other back ends (e.g.,
@@ -37,7 +36,6 @@ ToDo:
 1. Logging.
 2. Test cases.
 3. Docs (especially configuration).
-4. Document Wordnet load/use.
 5. Buffered Stepper channels.
 
 
@@ -52,19 +50,14 @@ do
 However, unlike Cayley, we base this language on Go functions that can
 be used from Go applications.
 
-```Javascript
-g = G.Open('config.json')
-G.Out("p1").Walk(g, G.Vertex("a")).Collect()[0][0].ToStrings()
-```
-
 ToDo: Document.
 
 ## WordNet
 
 It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
+Here's an example of loading a useful subset of WordNet quickly.
 
 ```Shell
-go install
 wget http://wordnet-rdf.princeton.edu/wn31.nt.gz
 rm -f wordnet.nt
 for REL in hyponym hypernym meronym holonym; do
@@ -76,7 +69,7 @@ cat label.nt >> wordnet.nt
 tinygraph -config config.wordnet -load wordnet.nt -repl
 ```
 
-### Example WordNet queries
+### Example WordNet queries from the REPL
 
 ```Javascript
 g = G.Open("config.wordnet");
@@ -477,7 +470,7 @@ Level Files Size(MB)
 ![fb-gc-time-zoom.png](images/fb-gc-time-zoom.png)
 
 
-### Example query
+### Example low-level query
 
 ```Go
 g.Do(SPO, &Triple{[]byte("http://rdf.freebase.com/ns/m.0h55n27"), nil, nil, nil}, nil, ... )
@@ -526,7 +519,7 @@ next [http://rdf.freebase.com/ns/m.0h55n27 http://www.w3.org/2000/01/rdf-schema#
 ```
 
 
-### Using the Javascript interface
+### Using the HTTP interface
 
 ```Shell
 # In my dev Docker container ...
@@ -626,7 +619,7 @@ EOF
 curl --data-urlencode 'js@topic_js' http://localhost:9080/js
 ```
 
-Here's an example of looking up IDs and getting their descriptions.
+Here's an example of looking up ids and getting their descriptions.
 
 ```Shell
 cat <<EOF > desc_js
@@ -712,7 +705,7 @@ EOF
 curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
 ```
 
-A variation using iterators:
+Here's a variation using Javascript-accessible iterators:
 
 ```Shell
 cat <<EOF > iter.js
