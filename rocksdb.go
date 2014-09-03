@@ -115,9 +115,7 @@ func (g *Graph) NewIndexIterator(index Index, on *Triple, opts *rocks.ReadOption
 		opts = g.ropts
 	}
 	from := withIndex(index, on.StartKey())
-	fmt.Printf("Next fr %v\n", from)
 	to := withIndex(index, on.KeyPrefix())
-	fmt.Printf("Next to %v\n", to)
 	i := &Iterator{g.db.NewIterator(opts), from, to, Init}
 	return i
 }
