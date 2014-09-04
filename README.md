@@ -603,7 +603,7 @@ for (var i = 0; i < ss.length; i++) { console.log(desc(ss[i][0].ToStrings()[2]))
 Try to use the HTTP API to check to see what strings are aliases for topics.
 
 ```Shell
-cat <<EOF > topic_js
+cat <<EOF > topic.js
 var candidates = ["Ebola", "fruitcake", "no such topic", "Triton"];
 var alias = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
 function countTopics(name) {
@@ -616,13 +616,13 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@topic_js' http://localhost:9080/js
+curl --data-urlencode 'js@topic.js' http://localhost:9080/js
 ```
 
 Here's an example of looking up ids and getting their descriptions.
 
 ```Shell
-cat <<EOF > desc_js
+cat <<EOF > desc.js
 var candidates = ["Ebola", "fruitcake", "no such topic", "Triton"];
 
 var desc = G.Bs("http://rdf.freebase.com/ns/common.topic.description");
@@ -656,8 +656,40 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@desc_js' http://localhost:9080/js
+curl --data-urlencode 'js@desc.js' http://localhost:9080/js
 ```
+
+An attempt to find anything in Freebase associated with some term:
+
+```Shell
+cat <<EOF > find.js
+var desc = G.Bs("http://rdf.freebase.com/ns/common.topic.description");
+function description(mid) {
+    console.log('description("' + mid + '")');
+	var ss = G.Out(desc).Walk(G.Graph(), G.Vertex(mid)).Collect();
+	var acc = [ ];
+	for (var i = 0; i < ss.length; i++) {
+        acc.push(ss[0][0].ToStrings()[2]);
+	}
+	return acc;
+}
+
+function findTopics(name) {
+   var result = {}
+   result.ids = {}
+   var ss = G.AllIn().Walk(G.Graph(), G.Vertex(name)).Collect();
+   for (var i = 0; i < ss.length; i++) {
+	  var id = ss[i][0].ToStrings()[2];
+	  var rel = ss[i][0].ToStrings()[1];
+      var o = {rel: rel, id: id, description: description(id)};
+      result.ids[id] = o;
+   }
+   return result;
+}
+EOF
+curl --data-urlencode 'js@find.js' http://localhost:9080/js
+```
+
 
 Find some knowledge re Ghana
 

@@ -53,7 +53,7 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 
 	x, err := o.Export()
 
-	fmt.Fprintf(os.Stderr, "got %v (%v)\n", x, err)
+	// fmt.Fprintf(os.Stderr, "got %v (%v)\n", x, err)
 	if err != nil {
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
@@ -63,6 +63,6 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
 	}
-	fmt.Fprintf(os.Stderr, "returning %s\n", bs)
+	// fmt.Fprintf(os.Stderr, "returning %s\n", bs)
 	fmt.Fprintf(w, "%s\n", bs)
 }

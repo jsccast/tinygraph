@@ -58,8 +58,10 @@ type REPLIterator struct {
 }
 
 func (i *REPLIterator) Close() {
-	i.state = Closed
-	i.c.Close()
+	if i.state != Closed {
+		i.state = Closed
+		i.c.Close()
+	}
 }
 
 func (i *REPLIterator) IsClosed() bool {
