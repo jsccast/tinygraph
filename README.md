@@ -52,6 +52,12 @@ be used from Go applications.
 
 ToDo: Document.
 
+## Examples
+
+See
+[Semantic Recommendation notes](http://github.csv.comcast.com/jsteph206/semanticrecs/blob/master/notes.md)
+for some fairly elaborate examples using WordNet and Freebase.
+
 ## WordNet
 
 It's easy to load [WordNet RDF](http://wordnet-rdf.princeton.edu/).
