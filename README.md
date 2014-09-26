@@ -150,7 +150,7 @@ function holonyms(term) {
 }
 holonyms("Africa");
 EOF
-curl --data-urlencode 'js@holo.js' http://localhost:9080/js
+curl --data-urlencode 'js@holo.js' http://localhost:8080/js
 ```
 
 ```Javascript
@@ -241,19 +241,19 @@ function hypernyms(term) {
 
 hypernyms("virus");
 EOF
-curl --data-urlencode 'js@hyper.js' http://localhost:9080/js
+curl --data-urlencode 'js@hyper.js' http://localhost:8080/js
 ```
 
 Now that stuff should be available:
 
 ```Shell
-curl --data-urlencode 'js=hypernyms("radish")' http://localhost:9080/js
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js
 ```
 
 If you have [`jq`](http://stedolan.github.io/jq/):
 
 ```Shell
-curl --data-urlencode 'js=hypernyms("radish")' http://localhost:9080/js | ./jq -c '.[]'
+curl --data-urlencode 'js=hypernyms("radish")' http://localhost:8080/js | ./jq -c '.[]'
 ```
 
 gives
@@ -622,7 +622,7 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@topic.js' http://localhost:9080/js
+curl --data-urlencode 'js@topic.js' http://localhost:8080/js
 ```
 
 Here's an example of looking up ids and getting their descriptions.
@@ -662,7 +662,7 @@ for (var i = 0; i < candidates.length; i++) {
 }
 result;
 EOF
-curl --data-urlencode 'js@desc.js' http://localhost:9080/js
+curl --data-urlencode 'js@desc.js' http://localhost:8080/js
 ```
 
 An attempt to find anything in Freebase associated with some term:
@@ -693,7 +693,7 @@ function findTopics(name) {
    return result;
 }
 EOF
-curl --data-urlencode 'js@find.js' http://localhost:9080/js
+curl --data-urlencode 'js@find.js' http://localhost:8080/js
 ```
 
 
@@ -723,7 +723,7 @@ for (var i = 0; i < ss.length && i < limit; i++) {
 }
 acc;
 EOF
-curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
+curl --data-urlencode 'js@ghana.js' http://localhost:8080/js
 ```
 
 A few triples from Ghana:
@@ -740,7 +740,7 @@ for (var i = 0; i < ss.length && i < limit; i++) {
 }
 acc;
 EOF
-curl --data-urlencode 'js@ghana.js' http://localhost:9080/js
+curl --data-urlencode 'js@ghana.js' http://localhost:8080/js
 ```
 
 Here's a variation using Javascript-accessible iterators:
@@ -757,7 +757,7 @@ for (var x = i.Next(); !i.IsClosed(); x = i.Next()) {
 }
 acc;
 EOF
-curl --data-urlencode 'js@iter.js' http://localhost:9080/js
+curl --data-urlencode 'js@iter.js' http://localhost:8080/js
 ```
 
 ```Javascript
@@ -814,7 +814,7 @@ function countout(id) {
 }
 countout("http://rdf.freebase.com/ns/m.035dk");
 EOF
-curl --data-urlencode 'js@countout.js' http://localhost:9080/js
+curl --data-urlencode 'js@countout.js' http://localhost:8080/js
 ```
 
 Answer: 3,288.
@@ -822,7 +822,7 @@ Answer: 3,288.
 How about for [the Clash](https://www.freebase.com/m/07h76)?
 
 ```Shell
-curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
+curl --data-urlencode 'js=countout("http://rdf.freebase.com/ns/m.07h76")' http://localhost:8080/js
 ```
 
 Answer: 1,255.
@@ -835,9 +835,9 @@ function countin(id) {
   return G.AllIn().Walk(G.Graph(), G.Vertex(id)).Collect().length;
 }
 EOF
-curl --data-urlencode 'js@countin.js' http://localhost:9080/js
-curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.035dk")' http://localhost:9080/js
-curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.07h76")' http://localhost:9080/js
+curl --data-urlencode 'js@countin.js' http://localhost:8080/js
+curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.035dk")' http://localhost:8080/js
+curl --data-urlencode 'js=countin("http://rdf.freebase.com/ns/m.07h76")' http://localhost:8080/js
 ```
 
 2,246 for Ghana and 814 for the Clash.
@@ -870,7 +870,7 @@ function wikipediaFreebaseFacts(wikiTitle,limit,sample) {
 }
 wikipediaFreebaseFacts("Ghana", 100, 0.2);
 EOF
-curl --data-urlencode 'js@wfacts.js' http://localhost:9080/js > foo
+curl --data-urlencode 'js@wfacts.js' http://localhost:8080/js > foo
 ```
 
 ```Javascript

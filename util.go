@@ -5,6 +5,9 @@ import (
 	"os"
 	"sync"
 	"time"
+	"strings"
+	"compress/gzip"
+	"bufio"
 )
 
 func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
@@ -15,7 +18,17 @@ func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
 		return fmt.Errorf("Couldn't open file %s: %v", tripleFile, err)
 	}
 
-	ReadNQuadsFromReader(c, f)
+	in := bufio.NewReader(f)
+
+	if strings.HasSuffix(tripleFile, ".gz") {
+		zin, err := gzip.NewReader(f)
+		if err != nil {
+			return nil
+		}
+		in = bufio.NewReader(zin)
+	}
+
+	ReadNQuadsFromReader(c, in)
 	if err := f.Close(); err != nil {
 		fmt.Printf("ReadTriplesFromFile: %v\n", err)
 		return err
