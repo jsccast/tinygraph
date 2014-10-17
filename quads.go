@@ -23,7 +23,9 @@ func ParseTriple(s string) (*Triple, error) {
 		return nil, err
 	}
 	if sub == "" {
-		log.Printf("ParseTriple ignoring '%s' due to sub", s)
+		if !*ignoreSilently {
+			log.Printf("ParseTriple ignoring '%s' due to sub", s)
+		}
 		return nil, nil
 	}
 	// log.Println(sub + "; " + more)
@@ -34,7 +36,9 @@ func ParseTriple(s string) (*Triple, error) {
 		return nil, err
 	}
 	if pred == "" {
-		log.Printf("ParseTriple ignoring '%s' due to pred", s)
+		if !*ignoreSilently {
+			log.Printf("ParseTriple ignoring '%s' due to pred", s)
+		}
 		return nil, nil
 	}
 	// log.Println(pred + "; " + more)
@@ -45,7 +49,9 @@ func ParseTriple(s string) (*Triple, error) {
 		return nil, err
 	}
 	if obj == "" {
-		log.Printf("ParseTriple ignoring '%s' due to obj", s)
+		if !*ignoreSilently {
+			log.Printf("ParseTriple ignoring '%s' due to obj", s)
+		}
 		return nil, nil
 	}
 	// log.Println(obj + "; " + more)
@@ -115,8 +121,12 @@ LOOP:
 				raw = append(raw, '\n')
 			case 't':
 				raw = append(raw, '\t')
+			case '\\':
+				raw = append(raw, '\\')
+			case 'u':
+				raw = append(raw, '?') // ToDo: parse
 			default:
-				return "", s, fmt.Errorf("Bad escape at %d in '%s'", s)
+				return "", s, fmt.Errorf("Bad escape '%c' at %d in '%s'", s[i], i, s)
 			}
 			i++
 		case '"':
@@ -177,7 +187,7 @@ func ParseTriples(c chan *Triple, reader io.Reader) error {
 			return err
 		}
 
-		triple, err := ParseTriple(line)
+		triple, err := ParseTriple(strings.TrimSuffix(line, "\n"))
 		if err != nil {
 			log.Printf("ParseTriples error %v on '%s'", err, line)
 			continue

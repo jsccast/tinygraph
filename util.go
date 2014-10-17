@@ -1,16 +1,17 @@
 package main
 
 import (
+	"bufio"
+	"compress/gzip"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
-	"strings"
-	"compress/gzip"
-	"bufio"
 )
 
-func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
+func ReadTriplesFile(c chan *Triple, tripleFile string) error {
 	f, err := os.Open(tripleFile)
 	if err != nil {
 		fmt.Printf("ReadTriplesFromFile: Couldn't open file %s: %v\n", tripleFile, err)
@@ -18,9 +19,16 @@ func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
 		return fmt.Errorf("Couldn't open file %s: %v", tripleFile, err)
 	}
 
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("ReadTriplesFromFile Close error %v", err)
+		}
+
+	}()
+
 	in := bufio.NewReader(f)
 
-	if strings.HasSuffix(tripleFile, ".gz") {
+	if strings.HasSuffix(tripleFile, ".gz") || *gzipin {
 		zin, err := gzip.NewReader(f)
 		if err != nil {
 			return nil
@@ -28,9 +36,9 @@ func ReadTriplesFromFile(c chan *Triple, tripleFile string) error {
 		in = bufio.NewReader(zin)
 	}
 
-	ReadNQuadsFromReader(c, in)
-	if err := f.Close(); err != nil {
-		fmt.Printf("ReadTriplesFromFile: %v\n", err)
+	err = ParseTriples(c, in)
+	if err != nil {
+		log.Printf("ReadTriplesFile error %v", err)
 		return err
 	}
 
@@ -45,7 +53,7 @@ func NowStringMillis() string {
 	return time.Now().Format(time.RFC3339Nano)[0:23] + "Z"
 }
 
-func (g *Graph) LoadTriplesFromFile(filename string, opts *Options, wait *sync.WaitGroup) {
+func (g *Graph) LoadTriplesFile(filename string, opts *Options, wait *sync.WaitGroup) {
 	defer func() {
 		if wait != nil {
 			wait.Done()
@@ -53,7 +61,9 @@ func (g *Graph) LoadTriplesFromFile(filename string, opts *Options, wait *sync.W
 	}()
 
 	c := make(chan *Triple)
-	go ReadTriplesFromFile(c, filename)
+	go func() {
+		ReadTriplesFile(c, filename)
+	}()
 
 	batchSize := 1000
 	if n, ok := opts.IntKey("batch_size"); ok {
@@ -87,6 +97,11 @@ func (g *Graph) LoadTriplesFromFile(filename string, opts *Options, wait *sync.W
 		}
 	}
 	for t := range c {
+		if t == nil {
+			log.Printf("nil triple")
+			continue
+		}
+
 		if t == nil {
 			break
 		}

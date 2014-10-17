@@ -219,7 +219,7 @@ function collect(rel, id, acc, uniq, recursive, reverse, maxDepth, depth) {
           uniq[h] = true;
 		  acc.push({labels: labels(h), depth: depth});
 		  if (recursive && depth <= maxDepth) {
-			  collect(rel, h, acc, uniq, recursive, reverse, depth+1);
+			  collect(rel, h, acc, uniq, recursive, reverse, maxDepth, depth+1);
 		  }
 	  }
   }
@@ -286,20 +286,20 @@ gives
 Cheap geography:
 
 ```Shell
-curl --data-urlencode 'js=recurse("http://wordnet-rdf.princeton.edu/ontology#part_meronym","London")' \
+curl --data-urlencode 'js=recurse("http://wordnet-rdf.princeton.edu/ontology#part_meronym", false, 1000, "Tripoli")' \
   http://localhost:8080/js | ./jq -c '.[]'
 ```
 
-```Javascript
-{"labels":["England"],"level":0}
-{"labels":["Britain","Great Britain","U.K.","UK","United Kingdom","United Kingdom of Great Britain and Northern Ireland"],"level":1}
-{"labels":["British Isles"],"level":2}
-{"labels":["Atlantic","Atlantic Ocean"],"level":3}
-{"labels":["Europe"],"level":1}
-{"labels":["Occident","West"],"level":2}
-{"labels":["Eurasia"],"level":2}
-{"labels":["eastern hemisphere","orient"],"level":3}
-{"labels":["northern hemisphere"],"level":3}
+```
+collect http://wordnet-rdf.princeton.edu/wn31/108977154-n depth 1 labels Lebanese Republic,Lebanon
+collect http://wordnet-rdf.princeton.edu/wn31/108809019-n depth 2 labels Middle East,Mideast,Near East
+collect http://wordnet-rdf.princeton.edu/wn31/109230176-n depth 2 labels Asia
+collect http://wordnet-rdf.princeton.edu/wn31/109297922-n depth 3 labels Eurasia
+collect http://wordnet-rdf.princeton.edu/wn31/108579780-n depth 4 labels eastern hemisphere,orient
+collect http://wordnet-rdf.princeton.edu/wn31/108629219-n depth 4 labels northern hemisphere
+collect http://wordnet-rdf.princeton.edu/wn31/108979872-n depth 0 labels Tarabulus Al-Gharb,Tripoli,capital of Libya
+collect http://wordnet-rdf.princeton.edu/wn31/108979456-n depth 1 labels Libya,Socialist People's Libyan Arab Jamahiriya
+collect http://wordnet-rdf.princeton.edu/wn31/109212308-n depth 2 labels Africa
 ```
 
 
@@ -381,7 +381,8 @@ Currently I'm using this code to load all of
 
 Summary: I processed 2,638,544,493 lines (356,018,834,809 bytes) into
 2,386,769,886 unique triples (edges) in 16 hours.  On disk, the
-database is 90GB.  So we can run all of Freebase out of RAM.
+database is 90GB.  So we can run all of Freebase out of RAM (via the
+page cache).
 
 But: Still verifying that processing.
 
