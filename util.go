@@ -112,7 +112,7 @@ func (g *Graph) LoadTriplesFile(filename string, opts *Options, wait *sync.WaitG
 				problems++
 				fmt.Printf("ERROR: %v %d at %d\n", err, problems, i)
 				for j, bad := range batch {
-					ss := bad.ToStrings()
+					ss := bad.Strings()
 					s := ss[0]
 					p := ss[1]
 					o := ss[2]

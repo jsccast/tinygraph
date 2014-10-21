@@ -11,5 +11,6 @@ func TestQuads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(triple.ToString())
+
+	fmt.Println(triple.String())
 }

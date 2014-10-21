@@ -6,6 +6,10 @@ import (
 )
 
 func TinyTest(g *Graph) {
+
+	// For now, pile a bunch of tests in here.
+	// ToDo: Not that.
+
 	err := g.WriteIndexedTriple(TripleFromStrings("I", "liked", "salad", "today"), nil)
 	err = g.WriteIndexedTriple(TripleFromStrings("I", "ate", "chips", "today"), nil)
 	err = g.WriteIndexedTriple(TripleFromStrings("I", "sold", "fruit", "today"), nil)

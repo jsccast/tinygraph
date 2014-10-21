@@ -1,10 +1,13 @@
 package main
 
+// How to read and write triples.
+
 import (
 	"bytes"
 	"fmt"
-	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
 	"sync/atomic"
+
+	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
 )
 
 type Graph struct {
@@ -183,7 +186,6 @@ func (g *Graph) WriteIndexedTriples(triples []*Triple, opts *rocks.WriteOptions)
 	}
 	batch := rocks.NewWriteBatch()
 	for _, triple := range triples {
-		// fmt.Printf("triple %v\n", triple.ToString())
 		v := triple.Val()
 		// ToDo: Optimize
 		batch.Put(withIndex(SPO, triple.Copy().Permute(SPO).Key()), v)

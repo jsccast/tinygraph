@@ -1,5 +1,7 @@
 package main
 
+// A fairly fragile RDF triple (quad) parser.
+
 import (
 	"bufio"
 	"fmt"

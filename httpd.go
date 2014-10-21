@@ -1,25 +1,32 @@
 package main
 
+// Simple HTTP server that handles Javascript.  A single Javascript
+// interpreter is shared, which is not ideal.
+
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/robertkrimen/otto"
+	"log"
 	"net/http"
-	"os"
+
+	"github.com/robertkrimen/otto"
 )
 
+// We have a sad global for the graph given by the configFile.
 var httpdGraph *Graph
+
+// We have a single Javascript interpreter, which we probably shouldn't.
 var httpVM *otto.Otto
 
 func runHttpd() {
-	fmt.Fprintf(os.Stderr, "opening %s\n", *configFile)
+	log.Printf("Opening config %s", *configFile)
 	httpdGraph, _ = GetGraph(*configFile)
 	http.HandleFunc("/js", handleJavascript)
-	fmt.Fprintf(os.Stderr, "start %s\n", *httpPort)
-	fmt.Fprintf(os.Stderr, "done %v\n", http.ListenAndServe(*httpPort, nil))
+	log.Printf("Start HTTP server %s", *httpPort)
+	log.Printf("Done with HTTP server (%v)", http.ListenAndServe(*httpPort, nil))
 }
 
-// Sorry
+// Graph returns the global graph.  Bad.
 func (e *Env) Graph() *Graph {
 	return httpdGraph
 }
@@ -30,7 +37,7 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 	if js == "" {
 		js = "{};"
 	}
-	fmt.Fprintf(os.Stderr, "executing %s\n", js)
+	log.Printf("javascript: executing %s\n", js)
 
 	var vm *otto.Otto
 	if *sharedHttpVM {
@@ -47,6 +54,7 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 	o, err := vm.Run(js)
 
 	if err != nil {
+		log.Printf("javascript: warning: user error: %v", err)
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
 	}
@@ -55,14 +63,18 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 
 	// fmt.Fprintf(os.Stderr, "got %v (%v)\n", x, err)
 	if err != nil {
+		log.Printf("javascript: warning: export error: %v", err)
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
 	}
 	bs, err := json.MarshalIndent(&x, "  ", "  ")
 	if err != nil {
+		log.Printf("javascript: warning: marshal error: %v", err)
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
 	}
-	// fmt.Fprintf(os.Stderr, "returning %s\n", bs)
+
+	log.Printf("javascript: returning %d bytes\n", len(bs))
+
 	fmt.Fprintf(w, "%s\n", bs)
 }

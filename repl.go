@@ -1,5 +1,7 @@
 package main
 
+// Expose some Go functions to Javascript.
+
 import (
 	"bufio"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 // g = G.Open('config.json')
 // G.Out("p1").Walk(g, G.Vertex("a")).Collect()[0][0].ToStrings()
 
+// Env hold our bindings.
 type Env struct {
 }
 
@@ -47,10 +50,13 @@ func (e *Env) AllIn() *Stepper {
 	return AllIn()
 }
 
+// Bs converts the given string to a byte array.
 func (e *Env) Bs(s string) []byte {
 	return []byte(s)
 }
 
+// REPLIterator exposes an path channel as an iterator in Javascript.
+// For convenience.  Might not be that useful.
 type REPLIterator struct {
 	c     *Chan
 	n     int64
@@ -77,10 +83,14 @@ func (i *REPLIterator) Next() interface{} {
 	return <-(i.c).c
 }
 
+// BUG(?): Iterator can return an array with a nil first component
+// even though isClosed() is false.  See examples/iter.js.
+
 func (c *Chan) Iter(limit int64) *REPLIterator {
 	return &REPLIterator{c, limit, Open}
 }
 
+// Scan returns up to 'limit' triples starting with the given vertex.
 func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
 	alloc := limit
 	if 10000 < alloc {
@@ -89,7 +99,7 @@ func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
 	acc := make([][]string, 0, alloc)
 	g.Do(SPO, &Triple{[]byte(s), nil, nil, nil}, nil,
 		func(t *Triple) bool {
-			acc = append(acc, t.ToStrings())
+			acc = append(acc, t.Strings())
 			limit--
 			if limit == 0 {
 				return false
@@ -115,6 +125,7 @@ func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	vm := otto.New()
 	initEnv(vm)
+	// Complete statement/expression must be on one line.
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "quit()" {

@@ -140,7 +140,7 @@ func DoPrint(g *Graph, index Index, label string, s string) bool {
 	found := 0
 	g.Do(index, &Triple{[]byte(s), nil, nil, nil}, nil,
 		func(t *Triple) bool {
-			fmt.Printf("%s %v\n", label, t.ToStrings())
+			fmt.Printf("%s %v\n", label, t.Strings())
 			found++
 			limit--
 			if limit == 0 {

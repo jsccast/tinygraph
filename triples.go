@@ -39,7 +39,7 @@ func TripleFromStrings(args ...string) *Triple {
 }
 
 // Not func(t *Triple) so Otto can find this method.
-func (t Triple) ToStrings() []string {
+func (t Triple) Strings() []string {
 	acc := make([]string, 0, 4)
 	acc = append(acc, string(t.S))
 	acc = append(acc, string(t.P))
@@ -49,7 +49,7 @@ func (t Triple) ToStrings() []string {
 }
 
 // Not func(t *Triple) so Otto can find this method.
-func (t Triple) ToString() string {
+func (t Triple) String() string {
 	return "<'" +
 		string(t.S) + "','" +
 		string(t.P) + "','" +
@@ -153,6 +153,6 @@ func (t *Triple) Permute(index Index) *Triple {
 }
 
 func PrintTriple(t *Triple) bool {
-	fmt.Printf("%v\n", t.ToStrings())
+	fmt.Println(t.Strings())
 	return true
 }

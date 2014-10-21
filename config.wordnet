@@ -1,4 +1,4 @@
-{"db_dir":"wordnet",
+{"db_dir":"wordnet.db",
  "write_buffer_size_power":26,
  "target_file_size_base_power":29,
  "disable_wal":true,
