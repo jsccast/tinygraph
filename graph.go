@@ -117,13 +117,22 @@ func (g *Graph) NewIndexIterator(index Index, on *Triple, opts *rocks.ReadOption
 	if opts == nil {
 		opts = g.ropts
 	}
-	from := withIndex(index, on.StartKey())
-	to := withIndex(index, on.KeyPrefix())
+	var from []byte
+	var to []byte
+	if on == nil {
+		zero := []byte{}
+		from = withIndex(index, zero)
+		to = withIndex(index, zero)
+	} else {
+		from = withIndex(index, on.StartKey())
+		to = withIndex(index, on.KeyPrefix())
+	}
 	i := &Iterator{g.db.NewIterator(opts), from, to, Init}
 	return i
 }
 
 func (i *Iterator) Next() bool {
+
 	switch i.state {
 	case Init:
 		i.i.Seek(i.from)
@@ -221,4 +230,139 @@ func (g *Graph) Do(index Index, on *Triple, opts *rocks.ReadOptions, f TripleFun
 	}
 	i.Release()
 	return nil
+}
+
+func (g *Graph) DoAll(opts *rocks.ReadOptions, limit int, f TripleFun) error {
+	i := g.NewIndexIterator(SPO, nil, opts)
+	for i.Next() && 0 < limit {
+		limit--
+		if !f(IndexedTripleFromBytes(SPO, i.Key(), i.Value()).Permute(SPO)) {
+			break
+		}
+	}
+	i.Release()
+	return nil
+}
+
+func inc(bs []byte) []byte { // Copies
+	acc := make([]byte, len(bs))
+	copy(acc, bs)
+
+	i := len(bs) - 1
+	end := len(bs)
+	for 0 <= i {
+		b := acc[i]
+		if b < b+1 {
+			acc[i]++
+			break
+		}
+		// Overflow
+		end--
+		i--
+	}
+	if i < 0 {
+		return []byte{}
+	}
+
+	return acc[0:end]
+}
+
+func (g *Graph) DoVertexes(opts *rocks.ReadOptions, limit int, f func([]byte) bool) error {
+	// ToDo: Reimplement with iterators?
+	if opts == nil {
+		opts = g.ropts
+	}
+
+	i := g.db.NewIterator(opts)
+	index := byte(SPO)
+	at := []byte{index, 0}
+
+	for 0 <= limit {
+		limit--
+		i.Seek(at)
+		if !i.Valid() {
+			break
+		}
+		k := i.Key()
+		if k[0] != index {
+			break
+		}
+		v := i.Value()
+		t := TripleFromBytes(k[1:], v)
+		s := t.S
+		if !f(s) {
+			break
+		}
+		s = inc(s)
+		at = make([]byte, len(s)+1)
+		copy(at[1:], s)
+		at[0] = index
+	}
+
+	i.Close()
+	return nil
+}
+
+type VertexIterator struct {
+	i    *rocks.Iterator
+	at   []byte
+	done bool
+}
+
+func (g *Graph) NewVertexIterator() *VertexIterator {
+	opts := g.ropts
+	return &VertexIterator{g.db.NewIterator(opts), []byte{}, false}
+}
+
+func (i *VertexIterator) Next() ([]byte, bool) {
+	index := byte(SPO)
+
+	at := i.at
+	if i.done {
+		return nil, false
+	}
+
+	if len(at) == 0 {
+		at = []byte{index, 0}
+	}
+
+	i.i.Seek(at)
+	if !i.i.Valid() {
+		i.Release()
+		return nil, false
+	}
+
+	k := i.i.Key()
+	if k[0] != index {
+		i.Release()
+		return nil, false
+	}
+
+	v := i.i.Value()
+	t := TripleFromBytes(k[1:], v)
+	s := t.S
+
+	seek := inc(s)
+	to := make([]byte, len(seek)+1)
+	copy(to[1:], seek)
+	to[0] = index
+	i.at = to
+
+	return s, true
+}
+
+// Really for Javscript.
+func (i *VertexIterator) NextVertex() string {
+	bs, ok := i.Next()
+	if !ok {
+		return ""
+	}
+	return string(bs)
+}
+
+func (i *VertexIterator) Release() {
+	if !i.done {
+		i.i.Close()
+		i.done = true
+	}
 }

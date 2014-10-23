@@ -37,6 +37,15 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 	if js == "" {
 		js = "{};"
 	}
+	pretty := r.FormValue("pretty")
+	switch pretty {
+	case "":
+		pretty = "true"
+	case "true":
+	default:
+		pretty = "false"
+	}
+
 	log.Printf("javascript: executing %s\n", js)
 
 	var vm *otto.Otto
@@ -67,7 +76,12 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)
 		return
 	}
-	bs, err := json.MarshalIndent(&x, "  ", "  ")
+	var bs []byte
+	if pretty == "true" {
+		bs, err = json.MarshalIndent(&x, "  ", "  ")
+	} else {
+		bs, err = json.Marshal(&x)
+	}
 	if err != nil {
 		log.Printf("javascript: warning: marshal error: %v", err)
 		fmt.Fprintf(w, `{"error":"%v", "js":"%s"}`, err, js)

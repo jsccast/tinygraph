@@ -142,5 +142,5 @@ ToDo:
 5. Expose `GetApproximateSizes`.
 6. Reorganize for embedded use.
 7. Deal with concurrent requests and Javascript.
-
-
+8. Function to Walk all vertexes.
+9. Mutexes, etc.

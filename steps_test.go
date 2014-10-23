@@ -45,7 +45,7 @@ func TestSteps(t *testing.T) {
 		Out([]byte("p1")),
 		Has(has)}).Collect()
 	if len(paths) != 1 {
-		t.Fatal("2 Expected %d paths but got %d", 1, len(paths))
+		t.Fatalf("2 Expected %d paths but got %d", 1, len(paths))
 	}
 	if string(paths[0][3].O) != "i" {
 		t.Error("2 Expected %s but got %s", "i", paths[0][3].O)
@@ -60,14 +60,14 @@ func TestSteps(t *testing.T) {
 		Walk(g, v).
 		Collect()
 	if len(paths) != 1 {
-		t.Fatal("3 Expected %d paths but got %d", 1, len(paths))
+		t.Fatalf("3 Expected %d paths but got %d", 1, len(paths))
 	}
 	if string(paths[0][3].O) != "i" {
 		t.Error("3 Expected %s but got %s", "i", paths[0][3].O)
 	}
 
 	// 4
-	paths = Out(nil).
+	paths = AllOut().
 		Out([]byte("p2")).
 		In([]byte("p4")).
 		Out([]byte("p1")).
@@ -81,7 +81,7 @@ func TestSteps(t *testing.T) {
 		t.Error("4 Expected %s but got %s", "i", paths[0][3].O)
 	}
 
-	Out(nil).
+	AllOut().
 		Do(func(path Path) { fmt.Printf("doing 0 %v\n", path.String()) }).
 		Out([]byte("p2")).
 		Do(func(path Path) { fmt.Printf("doing 1 %v\n", path.String()) }).
@@ -99,4 +99,57 @@ func TestSteps(t *testing.T) {
 	fmt.Printf("collected %v\n", Out([]byte("p1")).
 		Walk(g, v).
 		Collect())
+
+	g.Close()
+
+}
+
+func TestDo(t *testing.T) {
+
+	// For now, we just pile stuff into this one function.
+	// ToDo: Don't do that.
+
+	g, _ := GetGraph("config.test")
+
+	g.WriteIndexedTriple(TripleFromStrings("aaa", "p1", "bbb", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("aaa", "p1", "fff", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("aaa", "p5", "jjj", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("bbb", "p2", "ccc", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("ccc", "p3", "ddd", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("ccc", "p3", "eee", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("ggg", "p4", "ccc", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("ggg", "p1", "hhh", "today"), nil)
+	g.WriteIndexedTriple(TripleFromStrings("ggg", "p1", "iii", "today"), nil)
+
+	g.DoAll(nil, 100, func(t *Triple) bool {
+		fmt.Printf("triple %v\n", t.String())
+		return true
+	})
+
+	fmt.Println("DoS")
+
+	g.DoVertexes(nil, 30, func(s []byte) bool {
+		Out([]byte("p1")).Walk(g, s).Print()
+		return true
+	})
+
+	i := g.NewVertexIterator()
+	for {
+		v, ok := i.Next()
+		if !ok {
+			break
+		}
+		fmt.Printf("v %s\n", v)
+	}
+
+	i = g.NewVertexIterator()
+	for {
+		v := i.NextVertex()
+		if v == "" {
+			break
+		}
+		fmt.Printf("nv %s\n", v)
+	}
+
+	g.Close()
 }

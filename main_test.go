@@ -64,4 +64,5 @@ func TinyTest(g *Graph) {
 func TestTinygraph(t *testing.T) {
 	g, _ := GetGraph(*configFile)
 	TinyTest(g)
+	g.Close()
 }
