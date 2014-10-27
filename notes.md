@@ -323,58 +323,13 @@ cores      24 (with HT)
 model name Six-Core AMD Opteron(tm) Processor 8435
 cpu MHz    2593.770
 cache size 512 KB
-disks      7xHDD (?)
+disks      7xHDD
 ```
 
-### Tinygraph/rocksdb config
+## Configuration
 
-```Javascript
-{
-  "allow_mmap_reads": false,
-  "allow_mmap_writes": false,
-  "allow_os_buffer": true,
-  "background_threads": 12,
-  "batch_size": 12000,
-  "block_size": 65536,
-  "bytes_per_sync_power": 25,
-  "cache_size": 3.3554432e+07,
-  "compression": "snappy",
-  "disable_data_sync": true,
-  "disable_wal": true,
-  "high_priority_background_threads": 12,
-  "increase_parallelism": 12,
-  "initial_compaction": false,
-  "level0_num_file_compaction_trigger": 24,
-  "log_level": 10,
-  "max_background_compactions": 8,
-  "max_background_flushes": 8,
-  "max_open_files": 512,
-  "max_write_buffer_number": 4,
-  "min_write_buffer_number_to_merge": 4,
-  "num_levels": 6,
-  "paranoid_checks": false,
-  "stats_dump_period": 300,
-  "stats_loop": true,
-  "sync": false,
-  "target_file_size_base_power": 29,
-  "target_file_size_multiplier": 4,
-  "triples_file": "/dev/shm/rocks/in/1,/dev/shm/rocks/in/2,/dev/shm/rocks/in/3,/dev/shm/rocks/in/4,/dev/shm/rocks/in/5",
-  "wal_dir": "/dev/shm/rocks",
-  "write_buffer_size_power": 28
- }
-```
+See `config.freebase`.
 
-### Processing
-
-```
-lines     2 638 544 493
-bytes   356 018 834 809
-start   2014-07-20T22:55:13.279Z
-done    2014-07-20T06:57:23.543Z
-elapsed 15:58:50
-keys    Should be 8B, but still verifying (at 2 386 769 886, which is strange)
-disk    89 943 764 K
-```
 
 ### Rocksdb levels
 
@@ -399,9 +354,13 @@ Level Files Size(MB)
 
 ![fb-mean-triple-rate-over-time-zoom.png](images/fb-mean-triple-rate-over-time-zoom.png)
 
-![fb-gc-time-over-time.png](images/fb-gc-time-over-time.png)
+Disk writes/sec:
 
-![fb-gc-time-zoom.png](images/fb-gc-time-zoom.png)
+![freebase-load-disk-wr.png](images/freebase-load-disk-wr.png)
+
+CPU `%user`:
+
+![freebase-load.png](images/freebase-load.png)
 
 
 ### Example low-level query
@@ -456,17 +415,15 @@ next [http://rdf.freebase.com/ns/m.0h55n27 http://www.w3.org/2000/01/rdf-schema#
 ### Using the HTTP interface
 
 ```Shell
-# In my dev Docker container ...
-cd /sdb/stephens/vagrant
 echo '{"db_dir":"freebase.en","read_only":true}' > freebase-read.js
 ./tinygraph -repl
 ```
 
 ```Shell
-cat <<EOF > foo
+cat <<EOF > req.js
 G.Scan(G.Graph(), G.Bs("http://rdf.freebase.com/ns/m.0h55n27"), 100);
 EOF
-curl --data-urlencode 'js@foo' http://localhost:9081/js
+curl --data-urlencode 'js@req.js' http://localhost:9081/js
 ```
 
 ```Javascript
@@ -506,8 +463,7 @@ curl --data-urlencode 'js@foo' http://localhost:9081/js
 
 
 ```Javascript
-g = G.Open('freebase-read.js');
-function desc(mid) { return G.Out(G.Bs("http://rdf.freebase.com/ns/common.topic.description")).Walk(g, G.Vertex(mid)).Collect()[0][0].Strings()[2]; }
+function desc(mid) { return G.Out(G.Bs("http://rdf.freebase.com/ns/common.topic.description")).Walk(G.Graph(), G.Vertex(mid)).Collect()[0][0].Strings()[2]; }
 ebola = "http://rdf.freebase.com/ns/m.0h55n27";
 desc(ebola);
 ```
@@ -525,14 +481,6 @@ desc(ebola);
 > humans, though hazardous to monkeys; the perception of its lethality
 > was confounded due to the monkey's coinfection with Simian
 > hemorrhagic fever virus.
-
-```Javascript
-thing = "Ebola";
-p = G.Bs("http://rdf.freebase.com/ns/common.topic.alias");
-ss = G.In(p).Walk(g, G.Vertex(thing)).Collect();
-for (var i = 0; i < ss.length; i++) { console.log(desc(ss[i][0].Strings()[2])); }
-// Doesn't quite work ...
-```
 
 Try to use the HTTP API to check to see what strings are aliases for topics.
 
