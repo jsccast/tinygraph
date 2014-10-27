@@ -3,42 +3,32 @@ package main
 import (
 	"flag"
 	"fmt"
-	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
 	"io/ioutil"
+	"log"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	. "github.csv.comcast.com/jsteph206/tinygraph"
 )
 
 var filesToLoad = flag.String("load", "", "Files to load")
 var repl = flag.Bool("repl", false, "Run REPL")
 var serve = flag.Bool("serve", false, "Start HTTPD server")
-var onlyLang = flag.String("lang", "eng", "Only get these strings ('en' for Freebase; 'eng' for WordNet)")
 var configFile = flag.String("config", "config.js", "Configuration file")
 var sharedHttpVM = flag.Bool("sharevm", true, "Use a shared Javascript VM for the HTTP service")
-var chanBufferSize = flag.Int("chanbuf", 16, "Traversal emission buffer")
 var httpPort = flag.String("port", ":8080", "HTTP server port")
-var gzipin = flag.Bool("gzip", false, "Input triple files are gzipped")
-var ignoreSilently = flag.Bool("silent-ignore", true, "Don't report when ingoring a triple")
 
 func RationalizeMaxProcs() {
 	if os.Getenv("GOMAXPROCS") == "" {
 		n := runtime.NumCPU()
-		fmt.Printf("Setting GOMAXPROCS to %d\n", n)
+		log.Printf("Setting GOMAXPROCS to %d\n", n)
 		runtime.GOMAXPROCS(n)
 	} else {
-		fmt.Printf("GOMAXPROCS is %v\n", os.Getenv("GOMAXPROCS"))
+		log.Printf("GOMAXPROCS is %v\n", os.Getenv("GOMAXPROCS"))
 	}
-}
-
-func CompactEverything(g *Graph) {
-	fmt.Printf("starting initial compaction %s\n", NowStringMillis())
-	ff := byte(0xff)
-	r := rocks.Range{[]byte{}, []byte{ff, ff, ff, ff, ff, ff, ff, ff, ff}}
-	g.db.CompactRange(r)
-	fmt.Printf("completed initial compaction %s\n", NowStringMillis())
 }
 
 func WriteStatsLoop(g *Graph) {
@@ -51,40 +41,13 @@ func WriteStatsLoop(g *Graph) {
 	}()
 }
 
-func GetGraph(configFilename string) (*Graph, *Options) {
-	config, err := LoadOptions(configFilename)
-	if err != nil {
-		panic(err)
-	}
-
-	opts := RocksOpts(config)
-	opts.SetCreateIfMissing(true)
-	opts.SetErrorIfExists(false)
-
-	dirname := "tmp.db"
-	if dir, ok := config.StringKey("db_dir"); ok {
-		dirname = dir
-	}
-
-	g, err := NewGraph(dirname, opts)
-
-	if err != nil {
-		panic(err)
-	}
-
-	g.wopts = RocksWriteOpts(config)
-	g.ropts = RocksReadOpts(config)
-
-	return g, config
-}
-
 func Load() {
 	g, config := GetGraph(*configFile)
-	fmt.Println(g.GetStats())
+	log.Println(g.GetStats())
 
 	if b, ok := config.BoolKey("initial_compaction"); ok && b {
-		CompactEverything(g)
-		fmt.Println(g.GetStats())
+		g.Compact()
+		log.Println(g.GetStats())
 	}
 
 	if b, ok := config.BoolKey("stats_loop"); ok && b {
@@ -94,7 +57,7 @@ func Load() {
 	wait := sync.WaitGroup{}
 	for _, filename := range strings.Split(*filesToLoad, ",") {
 		filename = strings.TrimSpace(filename)
-		fmt.Printf("loading triples: %s\n", filename)
+		log.Printf("loading triples: %s\n", filename)
 		wait.Add(1)
 		go g.LoadTriplesFile(filename, config, &wait)
 		// Stagger the threads a little.
@@ -102,7 +65,7 @@ func Load() {
 	}
 	wait.Wait()
 
-	fmt.Println(g.GetStats())
+	log.Println(g.GetStats())
 
 	err := g.Close()
 	if err != nil {

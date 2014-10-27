@@ -1,4 +1,4 @@
-package main
+package tinygraph
 
 // Most of the options are delegated to RocksDB.
 

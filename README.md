@@ -2,14 +2,13 @@
 
 Goal: A simple and relatively efficient graph data store that can
 handle billions of vertexes on single machine.  In particular, we
-wanted a local copy of [Freebase](https://www.freebase.com/) and
-similar knowledge bases.
+wanted a local copy of [Freebase](https://www.freebase.com/).
 
 This project is called "<em>Tiny</em>graph" because the codebase is
 tiny.  It just doesn't do much, but it's pretty efficient and easy to
 use.
 
-Status: Experimental.
+Status: Experimental.  Definitely not over-engineered.
 
 What it can do:
 

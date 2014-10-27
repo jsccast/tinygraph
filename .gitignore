@@ -1,2 +1,4 @@
 *~
-tinygraph
+*.db/
+wn31.nt.gz
+TAGS

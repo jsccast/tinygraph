@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"testing"
+	. "github.csv.comcast.com/jsteph206/tinygraph"
 )
 
 func TinyTest(g *Graph) {

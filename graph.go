@@ -1,10 +1,11 @@
-package main
+package tinygraph
 
 // How to read and write triples.
 
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"sync/atomic"
 
 	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
@@ -24,6 +25,14 @@ func NewGraph(path string, opts *rocks.Options) (*Graph, error) {
 		return nil, err
 	}
 	return &Graph{db, opts, nil, nil, uint64(0)}, nil
+}
+
+func (g *Graph) Compact() {
+	log.Printf("starting initial compaction %s\n", NowStringMillis())
+	ff := byte(0xff)
+	r := rocks.Range{[]byte{}, []byte{ff, ff, ff, ff, ff, ff, ff, ff, ff}}
+	g.db.CompactRange(r)
+	log.Printf("completed initial compaction %s\n", NowStringMillis())
 }
 
 func (g *Graph) IncWrites(n uint64) uint64 {

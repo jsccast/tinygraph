@@ -1,4 +1,4 @@
-package main
+package tinygraph
 
 // A fairly fragile RDF triple (quad) parser.
 

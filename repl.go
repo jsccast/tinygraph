@@ -1,4 +1,4 @@
-package main
+package tinygraph
 
 // Expose some Go functions to Javascript.
 
@@ -32,6 +32,40 @@ func (e *Env) Open(config string) *Graph {
 		fmt.Printf("Open %s mystery error", config)
 	}
 	return g
+}
+
+func GetGraph(configFilename string) (*Graph, *Options) {
+	config, err := LoadOptions(configFilename)
+	if err != nil {
+		panic(err)
+	}
+
+	opts := RocksOpts(config)
+	opts.SetCreateIfMissing(true)
+	opts.SetErrorIfExists(false)
+
+	dirname := "tmp.db"
+	if dir, ok := config.StringKey("db_dir"); ok {
+		dirname = dir
+	}
+
+	g, err := NewGraph(dirname, opts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	g.wopts = RocksWriteOpts(config)
+	g.ropts = RocksReadOpts(config)
+
+	return g, config
+}
+
+var SharedGraph *Graph
+
+// Graph returns the global graph.  Sorry.
+func (e *Env) Graph() *Graph {
+	return SharedGraph
 }
 
 func (e *Env) Out(p []byte) *Stepper {
@@ -109,7 +143,7 @@ func (e *Env) Scan(g *Graph, s []byte, limit int64) [][]string {
 	return acc
 }
 
-func initEnv(vm *otto.Otto) {
+func InitEnv(vm *otto.Otto) {
 	vm.Set("G", new(Env))
 
 	vm.Set("toJS", func(call otto.FunctionCall) otto.Value {
@@ -124,7 +158,7 @@ func initEnv(vm *otto.Otto) {
 func REPL() {
 	scanner := bufio.NewScanner(os.Stdin)
 	vm := otto.New()
-	initEnv(vm)
+	InitEnv(vm)
 	// Complete statement/expression must be on one line.
 	for scanner.Scan() {
 		line := scanner.Text()

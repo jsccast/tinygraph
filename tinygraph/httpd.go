@@ -10,25 +10,18 @@ import (
 	"net/http"
 
 	"github.com/robertkrimen/otto"
+	. "github.csv.comcast.com/jsteph206/tinygraph"
 )
-
-// We have a sad global for the graph given by the configFile.
-var httpdGraph *Graph
 
 // We have a single Javascript interpreter, which we probably shouldn't.
 var httpVM *otto.Otto
 
 func runHttpd() {
 	log.Printf("Opening config %s", *configFile)
-	httpdGraph, _ = GetGraph(*configFile)
+	SharedGraph, _ = GetGraph(*configFile)
 	http.HandleFunc("/js", handleJavascript)
 	log.Printf("Start HTTP server %s", *httpPort)
 	log.Printf("Done with HTTP server (%v)", http.ListenAndServe(*httpPort, nil))
-}
-
-// Graph returns the global graph.  Bad.
-func (e *Env) Graph() *Graph {
-	return httpdGraph
 }
 
 func handleJavascript(w http.ResponseWriter, r *http.Request) {
@@ -52,12 +45,12 @@ func handleJavascript(w http.ResponseWriter, r *http.Request) {
 	if *sharedHttpVM {
 		if httpVM == nil {
 			httpVM = otto.New()
-			initEnv(httpVM)
+			InitEnv(httpVM)
 		}
 		vm = httpVM
 	} else {
 		vm = otto.New()
-		initEnv(vm)
+		InitEnv(vm)
 	}
 
 	o, err := vm.Run(js)

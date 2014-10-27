@@ -1,4 +1,4 @@
-package main
+package tinygraph
 
 // This code provides a slightly higher-level interface to Graph.Do().
 // In(), Out(), Do(), and Walk() are the top-level functions.  See
