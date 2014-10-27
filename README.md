@@ -138,8 +138,6 @@ ToDo:
 2. More test cases.
 3. More docs (especially configuration).
 4. Buffered Stepper channels.
-5. Expose `GetApproximateSizes`.
-6. Reorganize for embedded use.
-7. Deal with concurrent requests and Javascript.
-8. Function to Walk all vertexes.
-9. Mutexes, etc.
+5. Expose RocksDB `GetApproximateSizes`.
+6. Deal with concurrent requests and Javascript.
+7. Concurrency using mutexes and such.

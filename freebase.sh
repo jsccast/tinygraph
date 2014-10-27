@@ -1,10 +1,17 @@
 #!/bin/bash
 
+# Gets and attempts to load Freebase.
+
+# For strings, only load the @en version.  See -lang below.
+
 # Get a Freebase dump from https://developers.google.com/freebase/data
+
 DUMP=freebase-rdf-2014-07-13-00-00.gz
 wget -nc http://commondatastorage.googleapis.com/freebase-public/rdf/$DUMP
 
 # Process it.
+# Load batches of 6 files.
+# Needs 'unbuffer' from 'expect'.  Ugh.
 rm -rf test.db log processed
 mkdir -p par && (cd par && rm -f *.par)
 zcat $DUMP | \
