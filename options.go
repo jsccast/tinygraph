@@ -27,7 +27,7 @@ import (
 	"log"
 	"strings"
 
-	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
+	rocks "github.com/jsccast/rocksdb"
 )
 
 const (
@@ -218,15 +218,15 @@ func RocksOpts(options *Options) *rocks.Options {
 		log.Printf("config opts.SetMinWriteBufferNumberToMerge(%d)\n", n)
 	}
 
-	if n, ok := options.IntKey("block_size"); ok {
-		opts.SetBlockSize(n)
-		log.Printf("config opts.SetBlockSize(%d)\n", n)
-	}
+	// if n, ok := options.IntKey("block_size"); ok {
+	// 	opts.SetBlockSize(n)
+	// 	log.Printf("config opts.SetBlockSize(%d)\n", n)
+	// }
 
-	if n, ok := options.IntKey("block_restart_interval"); ok {
-		opts.SetBlockRestartInterval(n)
-		log.Printf("config opts.SetBlockRestartInterval(%d)\n", n)
-	}
+	// if n, ok := options.IntKey("block_restart_interval"); ok {
+	// 	opts.SetBlockRestartInterval(n)
+	// 	log.Printf("config opts.SetBlockRestartInterval(%d)\n", n)
+	// }
 
 	// Compaction
 

@@ -22,7 +22,7 @@ import (
 	"log"
 	"sync/atomic"
 
-	rocks "github.csv.comcast.com/jsteph206/gorocksdb"
+	rocks "github.com/jsccast/rocksdb"
 )
 
 type Graph struct {
